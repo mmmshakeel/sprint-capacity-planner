@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sprint, SprintListResponse } from '../types';
 import { sprintApi } from '../services/api';
 
-const SprintList: React.FC = () => {
+const SprintList = () => {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,12 +34,14 @@ const SprintList: React.FC = () => {
     try {
       setLoading(true);
       const response: SprintListResponse = await sprintApi.getAllSprints(pageNum + 1, limit);
-      setSprints(response.sprints);
-      setTotalCount(response.total);
+      setSprints(response?.sprints || []);
+      setTotalCount(response?.total || 0);
       setError(null);
     } catch (err) {
       setError('Failed to fetch sprints');
       console.error('Error fetching sprints:', err);
+      setSprints([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -132,7 +134,7 @@ const SprintList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sprints.map((sprint) => (
+              {(sprints || []).map((sprint) => (
                 <TableRow
                   key={sprint.id}
                   hover
