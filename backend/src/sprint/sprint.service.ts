@@ -39,15 +39,15 @@ export class SprintService {
     return this.findOne(savedSprint.id);
   }
 
-  async findAll(page: number = 1, limit: number = 10): Promise<{ data: Sprint[]; total: number }> {
-    const [data, total] = await this.sprintRepository.findAndCount({
+  async findAll(page: number = 1, limit: number = 10): Promise<{ sprints: Sprint[]; total: number }> {
+    const [sprints, total] = await this.sprintRepository.findAndCount({
       relations: ['teamMemberCapacities', 'teamMemberCapacities.teamMember'],
       skip: (page - 1) * limit,
       take: limit,
       order: { id: 'DESC' },
     });
 
-    return { data, total };
+    return { sprints, total };
   }
 
   async findOne(id: number): Promise<Sprint> {
