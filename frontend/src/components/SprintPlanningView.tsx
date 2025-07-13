@@ -23,7 +23,8 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { ArrowBack, Calculate, Save } from '@mui/icons-material';
 import { Sprint, TeamMember, CreateSprintDto, UpdateSprintDto } from '../types';
 import { sprintApi, teamMemberApi } from '../services/api';
@@ -240,7 +241,7 @@ const SprintPlanningView: React.FC = () => {
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box p={3}>
         <Box display="flex" alignItems="center" mb={3}>
           <IconButton onClick={() => navigate('/sprints')} sx={{ mr: 1 }}>
@@ -271,17 +272,17 @@ const SprintPlanningView: React.FC = () => {
                 <Grid item xs={6}>
                   <DatePicker
                     label="Start Date"
-                    value={startDate}
-                    onChange={(date) => setStartDate(date)}
-                    renderInput={(params) => <TextField {...params} fullWidth required />}
+                    value={startDate ? dayjs(startDate) : null}
+                    onChange={(date) => setStartDate(date ? date.toDate() : null)}
+                    slotProps={{ textField: { fullWidth: true, required: true } }}
                   />
                 </Grid>
                 <Grid item xs={6}>
                   <DatePicker
                     label="End Date"
-                    value={endDate}
-                    onChange={(date) => setEndDate(date)}
-                    renderInput={(params) => <TextField {...params} fullWidth required />}
+                    value={endDate ? dayjs(endDate) : null}
+                    onChange={(date) => setEndDate(date ? date.toDate() : null)}
+                    slotProps={{ textField: { fullWidth: true, required: true } }}
                   />
                 </Grid>
                 <Grid item xs={12}>
