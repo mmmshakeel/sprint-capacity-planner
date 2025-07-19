@@ -26,6 +26,51 @@ export class SprintController {
     return this.sprintService.findAll(+page, +limit);
   }
 
+  @Get('working-days')
+  @ApiOperation({ summary: 'Calculate working days between two dates' })
+  @ApiQuery({ name: 'startDate', description: 'Start date (YYYY-MM-DD)', example: '2025-08-03' })
+  @ApiQuery({ name: 'endDate', description: 'End date (YYYY-MM-DD)', example: '2025-08-17' })
+  @ApiResponse({ status: 200, description: 'Working days calculated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid date format' })
+  calculateWorkingDaysByDates(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    if (!startDate || !endDate) {
+      return { error: 'startDate and endDate are required' };
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return { error: 'Invalid date format. Use YYYY-MM-DD' };
+    }
+    
+    const workingDays = this.sprintService.calculateWorkingDays(start, end);
+    return { workingDays, startDate, endDate };
+  }
+
+  @Get(':id/working-days')
+  @ApiOperation({ summary: 'Calculate working days for a sprint' })
+  @ApiParam({ name: 'id', description: 'Sprint ID' })
+  @ApiResponse({ status: 200, description: 'Working days calculated successfully' })
+  @ApiResponse({ status: 404, description: 'Sprint not found' })
+  calculateWorkingDays(@Param('id') id: string) {
+    return this.sprintService.findOne(+id).then(sprint => {
+      if (!sprint) {
+        return { error: 'Sprint not found' };
+      }
+      
+      // Ensure dates are converted to Date objects
+      const startDate = new Date(sprint.startDate);
+      const endDate = new Date(sprint.endDate);
+      
+      const workingDays = this.sprintService.calculateWorkingDays(startDate, endDate);
+      return { workingDays, startDate: sprint.startDate, endDate: sprint.endDate };
+    });
+  }
+  
   @Get(':id')
   @ApiOperation({ summary: 'Get sprint by ID' })
   @ApiParam({ name: 'id', description: 'Sprint ID' })
@@ -60,17 +105,5 @@ export class SprintController {
   @ApiResponse({ status: 404, description: 'Sprint not found' })
   calculateProjectedVelocity(@Param('id') id: string) {
     return this.sprintService.calculateProjectedVelocity(+id);
-  }
-
-  @Get(':id/working-days')
-  @ApiOperation({ summary: 'Calculate working days for a sprint' })
-  @ApiParam({ name: 'id', description: 'Sprint ID' })
-  @ApiResponse({ status: 200, description: 'Working days calculated successfully' })
-  @ApiResponse({ status: 404, description: 'Sprint not found' })
-  calculateWorkingDays(@Param('id') id: string) {
-    return this.sprintService.findOne(+id).then(sprint => {
-      const workingDays = this.sprintService.calculateWorkingDays(sprint.startDate, sprint.endDate);
-      return { workingDays, startDate: sprint.startDate, endDate: sprint.endDate };
-    });
   }
 }
