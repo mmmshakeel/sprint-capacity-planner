@@ -15,8 +15,13 @@ import {
   Chip,
   IconButton,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
-import { Edit, Add } from '@mui/icons-material';
+import { Edit, Add, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Sprint, SprintListResponse } from '../types';
 import { sprintApi } from '../services/api';
@@ -28,6 +33,8 @@ const SprintList = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sprintToDelete, setSprintToDelete] = useState<Sprint | null>(null);
   const navigate = useNavigate();
 
   const fetchSprints = async (pageNum: number, limit: number) => {
@@ -66,6 +73,31 @@ const SprintList = () => {
 
   const handleNewSprint = () => {
     navigate('/sprints/new');
+  };
+
+  const handleDeleteClick = (sprint: Sprint, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSprintToDelete(sprint);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!sprintToDelete) return;
+
+    try {
+      await sprintApi.deleteSprint(sprintToDelete.id);
+      setDeleteDialogOpen(false);
+      setSprintToDelete(null);
+      fetchSprints(page, rowsPerPage);
+    } catch (err) {
+      setError('Failed to delete sprint');
+      console.error('Error deleting sprint:', err);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSprintToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -162,6 +194,12 @@ const SprintList = () => {
                     >
                       <Edit />
                     </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleDeleteClick(sprint, e)}
+                    >
+                      <Delete />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -179,6 +217,30 @@ const SprintList = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Sprint
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete the sprint "{sprintToDelete?.name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
