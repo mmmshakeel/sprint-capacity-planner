@@ -54,6 +54,24 @@ export const sprintApi = {
     const response = await api.post(`/sprints/${id}/calculate-projected-velocity`);
     return response.data;
   },
+
+  getSprintTeamMembers: async (id: number): Promise<TeamMember[]> => {
+    const response = await api.get(`/sprints/${id}/team-members`);
+    return response.data;
+  },
+
+  updateTeamMemberCapacities: async (id: number, capacities: { teamMemberId: number; capacity: number }[]): Promise<Sprint> => {
+    const response = await api.put(`/sprints/${id}/team-member-capacities`, capacities);
+    return response.data;
+  },
+
+  assignTeamMember: async (id: number, assignment: { teamMemberId: number; capacity: number }): Promise<void> => {
+    await api.post(`/sprints/${id}/assign-team-member`, assignment);
+  },
+
+  removeTeamMember: async (id: number, memberId: number): Promise<void> => {
+    await api.delete(`/sprints/${id}/team-members/${memberId}`);
+  },
 };
 
 export const teamMemberApi = {

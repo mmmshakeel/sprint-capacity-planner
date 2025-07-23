@@ -25,9 +25,10 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { ArrowBack, Calculate, Save } from '@mui/icons-material';
+import { ArrowBack, Calculate, Save, Add, Delete } from '@mui/icons-material';
 import { Sprint, TeamMember, CreateSprintDto, UpdateSprintDto } from '../types';
 import { sprintApi, teamMemberApi } from '../services/api';
+import TeamMemberAssignmentDialog from './TeamMemberAssignmentDialog';
 
 const SprintPlanningView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ const SprintPlanningView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
 
   // Form state
   const [sprintName, setSprintName] = useState('');
@@ -61,32 +63,30 @@ const SprintPlanningView: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch team members
-      const membersData = await teamMemberApi.getAllTeamMembers();
-      setTeamMembers(membersData.filter(member => member.active));
-
       if (!isNewSprint) {
-        // Fetch sprint data
-        const sprintData = await sprintApi.getSprintById(Number(id));
+        // Fetch sprint data and its assigned team members
+        const [sprintData, sprintTeamMembers] = await Promise.all([
+          sprintApi.getSprintById(Number(id)),
+          sprintApi.getSprintTeamMembers(Number(id))
+        ]);
+        
         setSprint(sprintData);
         setSprintName(sprintData.name);
         setStartDate(new Date(sprintData.startDate));
         setEndDate(new Date(sprintData.endDate));
         setCompletedVelocity(sprintData.completedVelocity);
+        setTeamMembers(sprintTeamMembers);
 
-        // Set team member capacities
+        // Set team member capacities from sprint team members
         const capacities: Record<number, number> = {};
-        sprintData.teamMemberCapacities?.forEach(capacity => {
-          capacities[capacity.teamMemberId] = capacity.capacity;
+        sprintTeamMembers.forEach(member => {
+          capacities[member.id] = (member as any).capacity || 0;
         });
         setTeamMemberCapacities(capacities);
       } else {
-        // Initialize empty capacities for new sprint
-        const capacities: Record<number, number> = {};
-        membersData.forEach(member => {
-          capacities[member.id] = 0;
-        });
-        setTeamMemberCapacities(capacities);
+        // For new sprints, start with empty team members list
+        setTeamMembers([]);
+        setTeamMemberCapacities({});
       }
 
       setError(null);
@@ -195,6 +195,16 @@ const SprintPlanningView: React.FC = () => {
 
         await sprintApi.updateSprint(Number(id), updateDto);
         
+        // Update team member capacities separately
+        const teamMemberCapacitiesArray = Object.entries(teamMemberCapacities)
+          .filter(([_, capacity]) => capacity > 0)
+          .map(([memberId, capacity]) => ({
+            teamMemberId: Number(memberId),
+            capacity: Number(capacity)
+          }));
+
+        await sprintApi.updateTeamMemberCapacities(Number(id), teamMemberCapacitiesArray);
+        
         // After saving, calculate projected velocity
         await handleCalculateProjectedVelocity();
       }
@@ -221,6 +231,57 @@ const SprintPlanningView: React.FC = () => {
       } finally {
         setSaving(false);
       }
+    }
+  };
+
+  const handleAssignTeamMember = async (teamMemberId: number, capacity: number) => {
+    if (isNewSprint) {
+      setError('Please save the sprint first before assigning team members');
+      return;
+    }
+
+    try {
+      await sprintApi.assignTeamMember(Number(id), { teamMemberId, capacity });
+      
+      // Refresh team members and capacities
+      const sprintTeamMembers = await sprintApi.getSprintTeamMembers(Number(id));
+      setTeamMembers(sprintTeamMembers);
+      
+      const capacities: Record<number, number> = {};
+      sprintTeamMembers.forEach(member => {
+        capacities[member.id] = (member as any).capacity || 0;
+      });
+      setTeamMemberCapacities(capacities);
+      
+      setError(null);
+    } catch (err) {
+      setError('Failed to assign team member');
+      console.error('Error assigning team member:', err);
+      throw err;
+    }
+  };
+
+  const handleRemoveTeamMember = async (teamMemberId: number) => {
+    if (isNewSprint) {
+      setError('Please save the sprint first before removing team members');
+      return;
+    }
+
+    try {
+      await sprintApi.removeTeamMember(Number(id), teamMemberId);
+      
+      // Remove from local state
+      setTeamMembers(prev => prev.filter(member => member.id !== teamMemberId));
+      setTeamMemberCapacities(prev => {
+        const updated = { ...prev };
+        delete updated[teamMemberId];
+        return updated;
+      });
+      
+      setError(null);
+    } catch (err) {
+      setError('Failed to remove team member');
+      console.error('Error removing team member:', err);
     }
   };
 
@@ -346,40 +407,86 @@ const SprintPlanningView: React.FC = () => {
           {/* Team Member Capacities */}
           <Grid item xs={12}>
             <Paper elevation={2} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Team Member Capacities
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                      <TableCell><strong>Name</strong></TableCell>
-                      <TableCell><strong>Skill</strong></TableCell>
-                      <TableCell><strong>Availability (days)</strong></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {teamMembers.map((member) => (
-                      <TableRow key={member.id}>
-                        <TableCell>{member.name}</TableCell>
-                        <TableCell>
-                          <Chip label={member.skill} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            type="number"
-                            size="small"
-                            value={teamMemberCapacities[member.id] || 0}
-                            onChange={(e) => handleCapacityChange(member.id, Number(e.target.value))}
-                            InputProps={{ inputProps: { min: 0, max: 20 } }}
-                            sx={{ width: 100 }}
-                          />
-                        </TableCell>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">
+                  Team Member Capacities
+                </Typography>
+                {!isNewSprint && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={() => setAssignmentDialogOpen(true)}
+                    size="small"
+                  >
+                    Add Team Member
+                  </Button>
+                )}
+              </Box>
+              
+              {teamMembers.length === 0 ? (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="body2" color="text.secondary">
+                    {isNewSprint 
+                      ? 'Save the sprint first to assign team members'
+                      : 'No team members assigned to this sprint yet'
+                    }
+                  </Typography>
+                  {!isNewSprint && (
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={() => setAssignmentDialogOpen(true)}
+                      sx={{ mt: 2 }}
+                    >
+                      Add First Team Member
+                    </Button>
+                  )}
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        <TableCell><strong>Name</strong></TableCell>
+                        <TableCell><strong>Skill</strong></TableCell>
+                        <TableCell><strong>Availability (days)</strong></TableCell>
+                        {!isNewSprint && <TableCell><strong>Actions</strong></TableCell>}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {teamMembers.map((member) => (
+                        <TableRow key={member.id}>
+                          <TableCell>{member.name}</TableCell>
+                          <TableCell>
+                            <Chip label={member.skill} size="small" />
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={teamMemberCapacities[member.id] || 0}
+                              onChange={(e) => handleCapacityChange(member.id, Number(e.target.value))}
+                              InputProps={{ inputProps: { min: 0, max: 20 } }}
+                              sx={{ width: 100 }}
+                            />
+                          </TableCell>
+                          {!isNewSprint && (
+                            <TableCell>
+                              <IconButton
+                                onClick={() => handleRemoveTeamMember(member.id)}
+                                size="small"
+                                title="Remove team member from sprint"
+                              >
+                                <Delete />
+                              </IconButton>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Paper>
           </Grid>
 

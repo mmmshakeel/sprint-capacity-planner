@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Sprint } from '../entities/sprint.entity';
 import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacity.entity';
-import { CreateSprintDto } from './dto/create-sprint.dto';
+import { TeamMember } from '../entities/team-member.entity';
+import { CreateSprintDto, TeamMemberCapacityDto } from './dto/create-sprint.dto';
 import { UpdateSprintDto } from './dto/update-sprint.dto';
 
 @Injectable()
@@ -13,6 +14,8 @@ export class SprintService {
     private sprintRepository: Repository<Sprint>,
     @InjectRepository(TeamMemberSprintCapacity)
     private teamMemberSprintCapacityRepository: Repository<TeamMemberSprintCapacity>,
+    @InjectRepository(TeamMember)
+    private teamMemberRepository: Repository<TeamMember>,
   ) {}
 
   async create(createSprintDto: CreateSprintDto): Promise<Sprint> {
@@ -128,5 +131,60 @@ export class SprintService {
     }
 
     return workingDays;
+  }
+
+  async getSprintTeamMembers(sprintId: number): Promise<TeamMember[]> {
+    const capacities = await this.teamMemberSprintCapacityRepository.find({
+      where: { sprintId },
+      relations: ['teamMember'],
+    });
+
+    return capacities.map(capacity => ({
+      ...capacity.teamMember,
+      capacity: capacity.capacity
+    }));
+  }
+
+  async updateTeamMemberCapacities(sprintId: number, capacities: TeamMemberCapacityDto[]): Promise<Sprint> {
+    await this.teamMemberSprintCapacityRepository.delete({ sprintId });
+    
+    const capacityEntities = capacities
+      .filter(capacity => capacity.capacity > 0)
+      .map(capacity => 
+        this.teamMemberSprintCapacityRepository.create({
+          sprintId,
+          teamMemberId: capacity.teamMemberId,
+          capacity: capacity.capacity,
+        })
+      );
+    
+    if (capacityEntities.length > 0) {
+      await this.teamMemberSprintCapacityRepository.save(capacityEntities);
+    }
+
+    return this.findOne(sprintId);
+  }
+
+  async assignTeamMember(sprintId: number, assignment: TeamMemberCapacityDto): Promise<TeamMemberSprintCapacity> {
+    const existingAssignment = await this.teamMemberSprintCapacityRepository.findOne({
+      where: { sprintId, teamMemberId: assignment.teamMemberId },
+    });
+
+    if (existingAssignment) {
+      existingAssignment.capacity = assignment.capacity;
+      return this.teamMemberSprintCapacityRepository.save(existingAssignment);
+    }
+
+    const newAssignment = this.teamMemberSprintCapacityRepository.create({
+      sprintId,
+      teamMemberId: assignment.teamMemberId,
+      capacity: assignment.capacity,
+    });
+
+    return this.teamMemberSprintCapacityRepository.save(newAssignment);
+  }
+
+  async removeTeamMember(sprintId: number, teamMemberId: number): Promise<void> {
+    await this.teamMemberSprintCapacityRepository.delete({ sprintId, teamMemberId });
   }
 }

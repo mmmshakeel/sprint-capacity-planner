@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Put } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { SprintService } from './sprint.service';
-import { CreateSprintDto } from './dto/create-sprint.dto';
+import { CreateSprintDto, TeamMemberCapacityDto } from './dto/create-sprint.dto';
 import { UpdateSprintDto } from './dto/update-sprint.dto';
 
 @ApiTags('sprints')
@@ -105,5 +105,51 @@ export class SprintController {
   @ApiResponse({ status: 404, description: 'Sprint not found' })
   calculateProjectedVelocity(@Param('id') id: string) {
     return this.sprintService.calculateProjectedVelocity(+id);
+  }
+
+  @Get(':id/team-members')
+  @ApiOperation({ summary: 'Get team members assigned to a sprint' })
+  @ApiParam({ name: 'id', description: 'Sprint ID' })
+  @ApiResponse({ status: 200, description: 'Team members retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Sprint not found' })
+  getSprintTeamMembers(@Param('id') id: string) {
+    return this.sprintService.getSprintTeamMembers(+id);
+  }
+
+  @Put(':id/team-member-capacities')
+  @ApiOperation({ summary: 'Update team member capacities for a sprint' })
+  @ApiParam({ name: 'id', description: 'Sprint ID' })
+  @ApiResponse({ status: 200, description: 'Team member capacities updated successfully' })
+  @ApiResponse({ status: 404, description: 'Sprint not found' })
+  updateTeamMemberCapacities(
+    @Param('id') id: string,
+    @Body() capacities: TeamMemberCapacityDto[]
+  ) {
+    return this.sprintService.updateTeamMemberCapacities(+id, capacities);
+  }
+
+  @Post(':id/assign-team-member')
+  @ApiOperation({ summary: 'Assign a team member to a sprint' })
+  @ApiParam({ name: 'id', description: 'Sprint ID' })
+  @ApiResponse({ status: 201, description: 'Team member assigned successfully' })
+  @ApiResponse({ status: 404, description: 'Sprint or team member not found' })
+  assignTeamMember(
+    @Param('id') id: string,
+    @Body() assignment: TeamMemberCapacityDto
+  ) {
+    return this.sprintService.assignTeamMember(+id, assignment);
+  }
+
+  @Delete(':id/team-members/:memberId')
+  @ApiOperation({ summary: 'Remove a team member from a sprint' })
+  @ApiParam({ name: 'id', description: 'Sprint ID' })
+  @ApiParam({ name: 'memberId', description: 'Team member ID' })
+  @ApiResponse({ status: 200, description: 'Team member removed successfully' })
+  @ApiResponse({ status: 404, description: 'Sprint or team member assignment not found' })
+  removeTeamMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string
+  ) {
+    return this.sprintService.removeTeamMember(+id, +memberId);
   }
 }

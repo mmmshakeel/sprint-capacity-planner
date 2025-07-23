@@ -5,7 +5,7 @@ describe('SprintService - calculateWorkingDays', () => {
 
   beforeEach(() => {
     // Create a minimal service instance for testing the pure function
-    service = new SprintService(null as any, null as any);
+    service = new SprintService(null as any, null as any, null as any);
   });
 
   describe('calculateWorkingDays', () => {
