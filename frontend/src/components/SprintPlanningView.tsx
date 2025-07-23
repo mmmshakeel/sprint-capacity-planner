@@ -418,7 +418,7 @@ const SprintPlanningView: React.FC = () => {
                     onClick={() => setAssignmentDialogOpen(true)}
                     size="small"
                   >
-                    Add Team Member
+                    Assign Team Member
                   </Button>
                 )}
               </Box>
