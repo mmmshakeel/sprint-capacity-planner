@@ -516,6 +516,13 @@ const SprintPlanningView: React.FC = () => {
           </Grid>
         </Grid>
       </Box>
+
+      <TeamMemberAssignmentDialog
+        open={assignmentDialogOpen}
+        onClose={() => setAssignmentDialogOpen(false)}
+        onAssign={handleAssignTeamMember}
+        assignedTeamMemberIds={teamMembers.map((member) => member.id)}
+      />
     </LocalizationProvider>
   );
 };
