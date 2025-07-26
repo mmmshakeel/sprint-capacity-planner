@@ -1,49 +1,31 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import { AppModule } from '../src/app.module';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
-
-let cachedApp: any;
 
 export default async (req: VercelRequest, res: VercelResponse) => {
-  if (!cachedApp) {
-    const expressApp = express();
+  try {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
-    const app = await NestFactory.create(
-      AppModule,
-      new ExpressAdapter(expressApp),
-      { logger: false }
-    );
-    
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
 
-    app.enableCors({
-      origin: process.env.FRONTEND_URL || '*',
-      credentials: true,
+    // Simple response for now
+    res.status(200).json({
+      message: 'Sprint Capacity Planner API is running!',
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      environment: process.env.NODE_ENV || 'development'
     });
-
-    // Setup Swagger documentation
-    const config = new DocumentBuilder()
-      .setTitle('Sprint Capacity Planner API')
-      .setDescription('API for managing sprint capacity planning with team members and sprints')
-      .setVersion('1.0')
-      .addTag('sprints', 'Sprint management operations')
-      .addTag('team-members', 'Team member management operations')
-      .build();
-    
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
-
-    await app.init();
-    cachedApp = app.getHttpAdapter().getInstance();
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message
+    });
   }
-
-  return cachedApp(req, res);
 };
