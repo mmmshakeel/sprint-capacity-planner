@@ -3,15 +3,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
-import * as express from 'express';
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import express from 'express';
 
-const server = express();
+let cachedApp: any;
 
-export default async (req, res) => {
-  if (!global.cachedNestApp) {
+export default async (req: VercelRequest, res: VercelResponse) => {
+  if (!cachedApp) {
+    const expressApp = express();
+    
     const app = await NestFactory.create(
       AppModule,
-      new ExpressAdapter(server),
+      new ExpressAdapter(expressApp),
       { logger: false }
     );
     
@@ -39,8 +42,8 @@ export default async (req, res) => {
     SwaggerModule.setup('api', app, document);
 
     await app.init();
-    global.cachedNestApp = app.getHttpAdapter().getInstance();
+    cachedApp = app.getHttpAdapter().getInstance();
   }
 
-  return global.cachedNestApp(req, res);
+  return cachedApp(req, res);
 };
