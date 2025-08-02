@@ -8,8 +8,23 @@
   ],
   "routes": [
     {
+      "src": "/api-docs/(swagger-ui.*)",
+      "dest": "/api/index.ts"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.ts"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api-docs/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
     }
   ]
 }
