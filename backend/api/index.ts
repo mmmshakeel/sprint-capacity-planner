@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '../src/app.module';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
@@ -54,7 +55,20 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         credentials: true,
       });
 
+      // Setup Swagger documentation
+      const config = new DocumentBuilder()
+        .setTitle('Sprint Capacity Planner API')
+        .setDescription('API for managing sprint capacity planning with team members and sprints')
+        .setVersion('1.0')
+        .addTag('sprints', 'Sprint management operations')
+        .addTag('team-members', 'Team member management operations')
+        .build();
+      
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api-docs', app, document);
+
       console.log('Initializing NestJS app...');
+      
       await app.init();
       console.log('NestJS app initialized successfully');
       cachedApp = app.getHttpAdapter().getInstance();
