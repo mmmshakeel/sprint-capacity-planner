@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
       "src": "/api-docs/(swagger-ui.*)",
       "dest": "/api/index.ts"
