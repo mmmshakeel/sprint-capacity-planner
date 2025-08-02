@@ -55,7 +55,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         credentials: true,
       });
 
-      // Setup Swagger documentation
+      // Setup Swagger documentation with CDN assets for Vercel compatibility
       const config = new DocumentBuilder()
         .setTitle('Sprint Capacity Planner API')
         .setDescription('API for managing sprint capacity planning with team members and sprints')
@@ -65,7 +65,20 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         .build();
       
       const document = SwaggerModule.createDocument(app, config);
-      SwaggerModule.setup('api-docs', app, document);
+      SwaggerModule.setup('api-docs', app, document, {
+        swaggerOptions: {
+          persistAuthorization: true,
+        },
+        customSiteTitle: 'Sprint Capacity Planner API',
+        customfavIcon: '/favicon.ico',
+        customJs: [
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js',
+        ],
+        customCssUrl: [
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+        ],
+      });
 
       console.log('Initializing NestJS app...');
       
