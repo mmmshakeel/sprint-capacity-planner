@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { Sprint } from '../entities/sprint.entity';
 import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacity.entity';
 import { TeamMember } from '../entities/team-member.entity';
@@ -91,14 +91,14 @@ export class SprintService {
     await this.sprintRepository.delete(id);
   }
 
-  async calculateProjectedVelocity(id: number): Promise<number> {
+  async calculateProjectedVelocity(id: number): Promise<{ projectedVelocity: number; averageStoryCompletion: number; sprintsAnalyzed: number }> {
     const sprint = await this.findOne(id);
     
     const totalCapacity = sprint.teamMemberCapacities.reduce((sum, tc) => sum + tc.capacity, 0);
     sprint.capacity = totalCapacity;
 
     const lastSprints = await this.sprintRepository.find({
-      where: { completedVelocity: { $gt: 0 } as any },
+      where: { completedVelocity: MoreThan(0) },
       order: { id: 'DESC' },
       take: 3,
     });
@@ -106,7 +106,7 @@ export class SprintService {
     let averageCompletionRate = 0.8; // Default fallback
 
     if (lastSprints.length > 0) {
-      const completionRates = lastSprints.map(s => s.completedVelocity / s.capacity);
+      const completionRates = lastSprints.map(s => s.capacity > 0 ? s.completedVelocity / s.capacity : 0);
       averageCompletionRate = completionRates.reduce((sum, rate) => sum + rate, 0) / completionRates.length;
     }
 
@@ -115,7 +115,11 @@ export class SprintService {
     sprint.projectedVelocity = projectedVelocity;
     await this.sprintRepository.save(sprint);
 
-    return projectedVelocity;
+    return {
+      projectedVelocity,
+      averageStoryCompletion: averageCompletionRate,
+      sprintsAnalyzed: lastSprints.length
+    };
   }
 
   calculateWorkingDays(startDate: Date, endDate: Date): number {

@@ -393,7 +393,7 @@ const SprintPlanningView: React.FC = () => {
                 <Card variant="outlined" sx={{ mt: 2, bgcolor: '#f5f5f5' }}>
                   <CardContent>
                     <Typography variant="h6" color="primary">
-                      Projected Velocity: {projectedVelocity}
+                      Projected Velocity Suggestion: {projectedVelocity}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Average Story Completion: {averageStoryCompletion?.toFixed(2)}
