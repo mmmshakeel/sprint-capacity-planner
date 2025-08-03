@@ -43,6 +43,7 @@ export class AwsMysqlStack extends cdk.Stack {
       engine: rds.DatabaseInstanceEngine.mysql({
         version: rds.MysqlEngineVersion.VER_8_0_39
       }),
+      instanceIdentifier: 'sprint-capacity-planner-mysql-db',
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO), // Free tier eligible
       vpc,
       subnetGroup,
