@@ -76,6 +76,11 @@ const SprintPlanningView: React.FC = () => {
         setEndDate(new Date(sprintData.endDate));
         setCompletedVelocity(sprintData.completedVelocity);
         setTeamMembers(sprintTeamMembers);
+        
+        // Set projected velocity if it exists in the sprint data
+        if (sprintData.projectedVelocity && sprintData.projectedVelocity > 0) {
+          setProjectedVelocity(sprintData.projectedVelocity);
+        }
 
         // Set team member capacities from sprint team members
         const capacities: Record<number, number> = {};
@@ -389,15 +394,17 @@ const SprintPlanningView: React.FC = () => {
                 ))}
               </Box>
 
-              {projectedVelocity !== null && (
+              {projectedVelocity !== null && projectedVelocity > 0 && (
                 <Card variant="outlined" sx={{ mt: 2, bgcolor: '#f5f5f5' }}>
                   <CardContent>
                     <Typography variant="h6" color="primary">
                       Projected Velocity Suggestion: {projectedVelocity}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Average Story Completion: {averageStoryCompletion?.toFixed(2)}
-                    </Typography>
+                    {averageStoryCompletion !== null && (
+                      <Typography variant="body2" color="text.secondary">
+                        Average Story Completion: {(averageStoryCompletion * 100).toFixed(0)}%
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -508,9 +515,8 @@ const SprintPlanningView: React.FC = () => {
                 startIcon={<Calculate />}
                 onClick={isNewSprint ? handleSave : handleCalculateProjectedVelocity}
                 disabled={saving || calculating}
-                sx={{ borderRadius: 2 }}
               >
-                {calculating ? 'Calculating...' : isNewSprint ? 'Save & Calculate' : 'Calculate Projected Velocity'}
+                {calculating ? 'Calculating...' : isNewSprint ? 'Save & Calculate' : (projectedVelocity !== null && projectedVelocity > 0) ? 'Recalculate Projected Velocity' : 'Calculate Projected Velocity'}
               </Button>
             </Box>
           </Grid>

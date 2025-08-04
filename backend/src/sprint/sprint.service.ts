@@ -97,10 +97,11 @@ export class SprintService {
     const totalCapacity = sprint.teamMemberCapacities.reduce((sum, tc) => sum + tc.capacity, 0);
     sprint.capacity = totalCapacity;
 
+    // Calculate average completion rate based on last 6 sprints with completed velocity
     const lastSprints = await this.sprintRepository.find({
       where: { completedVelocity: MoreThan(0) },
       order: { id: 'DESC' },
-      take: 3,
+      take: 6,
     });
 
     let averageCompletionRate = 0.8; // Default fallback
