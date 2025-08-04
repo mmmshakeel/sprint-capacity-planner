@@ -16,7 +16,6 @@ const Dashboard: React.FC = () => {
           variant="contained"
           startIcon={<List />}
           onClick={() => navigate('/sprints')}
-          sx={{ borderRadius: 2 }}
         >
           View Sprints
         </Button>
@@ -101,7 +100,7 @@ const Dashboard: React.FC = () => {
               sx={{ 
                 height: 300, 
                 bgcolor: '#f5f5f5', 
-                borderRadius: 1, 
+ 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',

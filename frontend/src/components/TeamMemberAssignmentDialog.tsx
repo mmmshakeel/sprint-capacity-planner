@@ -161,7 +161,7 @@ const TeamMemberAssignmentDialog: React.FC<TeamMemberAssignmentDialogProps> = ({
                   />
 
                   {selectedMember && (
-                    <Box mt={2} p={2} bgcolor="grey.50" borderRadius={1}>
+                    <Box mt={2} p={2} bgcolor="grey.50">
                       <Typography variant="subtitle2" gutterBottom>
                         Selected Team Member:
                       </Typography>

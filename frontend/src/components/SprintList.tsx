@@ -144,7 +144,6 @@ const SprintList = () => {
           variant="contained"
           startIcon={<Add />}
           onClick={handleNewSprint}
-          sx={{ borderRadius: 2 }}
         >
           New Sprint
         </Button>
