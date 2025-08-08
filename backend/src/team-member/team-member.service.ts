@@ -17,16 +17,23 @@ export class TeamMemberService {
     return this.teamMemberRepository.save(teamMember);
   }
 
-  async findAll(): Promise<TeamMember[]> {
+  async findAll(teamId?: number): Promise<TeamMember[]> {
+    const whereCondition: any = { active: true };
+    if (teamId) {
+      whereCondition.teamId = teamId;
+    }
+    
     return this.teamMemberRepository.find({
-      where: { active: true },
+      where: whereCondition,
       order: { name: 'ASC' },
+      relations: ['team'],
     });
   }
 
   async findOne(id: number): Promise<TeamMember> {
     return this.teamMemberRepository.findOne({
       where: { id },
+      relations: ['team'],
     });
   }
 
@@ -42,13 +49,17 @@ export class TeamMemberService {
     await this.teamMemberRepository.update(id, { active: false, updatedTime: new Date() });
   }
 
-  async getSkills(): Promise<string[]> {
-    const result = await this.teamMemberRepository
+  async getSkills(teamId?: number): Promise<string[]> {
+    const queryBuilder = this.teamMemberRepository
       .createQueryBuilder('teamMember')
       .select('DISTINCT teamMember.skill', 'skill')
-      .where('teamMember.active = :active', { active: true })
-      .getRawMany();
+      .where('teamMember.active = :active', { active: true });
     
+    if (teamId) {
+      queryBuilder.andWhere('teamMember.teamId = :teamId', { teamId });
+    }
+    
+    const result = await queryBuilder.getRawMany();
     return result.map(row => row.skill);
   }
 }

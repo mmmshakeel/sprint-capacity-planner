@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { TeamMemberService } from './team-member.service';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
@@ -19,16 +19,18 @@ export class TeamMemberController {
 
   @Get()
   @ApiOperation({ summary: 'Get all team members' })
+  @ApiQuery({ name: 'teamId', required: false, description: 'Filter by team ID' })
   @ApiResponse({ status: 200, description: 'List of team members returned successfully' })
-  findAll() {
-    return this.teamMemberService.findAll();
+  findAll(@Query('teamId') teamId?: string) {
+    return this.teamMemberService.findAll(teamId ? +teamId : undefined);
   }
 
   @Get('skills')
   @ApiOperation({ summary: 'Get all available skills' })
+  @ApiQuery({ name: 'teamId', required: false, description: 'Filter by team ID' })
   @ApiResponse({ status: 200, description: 'List of skills returned successfully' })
-  getSkills() {
-    return this.teamMemberService.getSkills();
+  getSkills(@Query('teamId') teamId?: string) {
+    return this.teamMemberService.getSkills(teamId ? +teamId : undefined);
   }
 
   @Get(':id')

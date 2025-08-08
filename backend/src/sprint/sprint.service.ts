@@ -24,6 +24,7 @@ export class SprintService {
       startDate: new Date(createSprintDto.startDate),
       endDate: new Date(createSprintDto.endDate),
       completedVelocity: createSprintDto.completedVelocity || 0,
+      teamId: createSprintDto.teamId,
     });
 
     const savedSprint = await this.sprintRepository.save(sprint);
@@ -42,9 +43,15 @@ export class SprintService {
     return this.findOne(savedSprint.id);
   }
 
-  async findAll(page: number = 1, limit: number = 10): Promise<{ sprints: Sprint[]; total: number }> {
+  async findAll(page: number = 1, limit: number = 10, teamId?: number): Promise<{ sprints: Sprint[]; total: number }> {
+    const whereCondition: any = {};
+    if (teamId) {
+      whereCondition.teamId = teamId;
+    }
+
     const [sprints, total] = await this.sprintRepository.findAndCount({
-      relations: ['teamMemberCapacities', 'teamMemberCapacities.teamMember'],
+      where: whereCondition,
+      relations: ['teamMemberCapacities', 'teamMemberCapacities.teamMember', 'team'],
       skip: (page - 1) * limit,
       take: limit,
       order: { id: 'DESC' },
@@ -56,7 +63,7 @@ export class SprintService {
   async findOne(id: number): Promise<Sprint> {
     return this.sprintRepository.findOne({
       where: { id },
-      relations: ['teamMemberCapacities', 'teamMemberCapacities.teamMember'],
+      relations: ['teamMemberCapacities', 'teamMemberCapacities.teamMember', 'team'],
     });
   }
 
@@ -67,6 +74,7 @@ export class SprintService {
     if (updateSprintDto.startDate) sprint.startDate = new Date(updateSprintDto.startDate);
     if (updateSprintDto.endDate) sprint.endDate = new Date(updateSprintDto.endDate);
     if (updateSprintDto.completedVelocity !== undefined) sprint.completedVelocity = updateSprintDto.completedVelocity;
+    if (updateSprintDto.teamId !== undefined) sprint.teamId = updateSprintDto.teamId;
 
     await this.sprintRepository.save(sprint);
 
@@ -97,9 +105,14 @@ export class SprintService {
     const totalCapacity = sprint.teamMemberCapacities.reduce((sum, tc) => sum + tc.capacity, 0);
     sprint.capacity = totalCapacity;
 
-    // Calculate average completion rate based on last 6 sprints with completed velocity
+    // Calculate average completion rate based on last 6 sprints with completed velocity from the same team
+    const whereCondition: any = { completedVelocity: MoreThan(0) };
+    if (sprint.teamId) {
+      whereCondition.teamId = sprint.teamId;
+    }
+
     const lastSprints = await this.sprintRepository.find({
-      where: { completedVelocity: MoreThan(0) },
+      where: whereCondition,
       order: { id: 'DESC' },
       take: 6,
     });
