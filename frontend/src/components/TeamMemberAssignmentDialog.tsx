@@ -20,6 +20,7 @@ import {
 import { Add } from '@mui/icons-material';
 import { TeamMember } from '../types';
 import { teamMemberApi } from '../services/api';
+import { useTeam } from '../contexts/TeamContext';
 import AddNewTeamMemberDialog from './AddNewTeamMemberDialog';
 
 interface TeamMemberAssignmentDialogProps {
@@ -44,6 +45,7 @@ const TeamMemberAssignmentDialog: React.FC<TeamMemberAssignmentDialogProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addNewTeamMemberDialogOpen, setAddNewTeamMemberDialogOpen] = useState(false);
+  const { selectedTeam } = useTeam();
 
   useEffect(() => {
     if (open) {
@@ -52,12 +54,12 @@ const TeamMemberAssignmentDialog: React.FC<TeamMemberAssignmentDialogProps> = ({
       setCapacity(0);
       setError(null);
     }
-  }, [open]);
+  }, [open, selectedTeam]);
 
   const fetchAllTeamMembers = async () => {
     try {
       setLoading(true);
-      const members = await teamMemberApi.getAllTeamMembers();
+      const members = await teamMemberApi.getAllTeamMembers(selectedTeam?.id);
       setAllTeamMembers(members.filter((member) => member.active));
     } catch (err) {
       setError('Failed to fetch team members');

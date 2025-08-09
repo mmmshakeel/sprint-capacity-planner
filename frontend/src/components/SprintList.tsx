@@ -25,6 +25,7 @@ import { Edit, Add, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Sprint, SprintListResponse } from '../types';
 import { sprintApi } from '../services/api';
+import { useTeam } from '../contexts/TeamContext';
 
 const SprintList = () => {
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -36,11 +37,12 @@ const SprintList = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sprintToDelete, setSprintToDelete] = useState<Sprint | null>(null);
   const navigate = useNavigate();
+  const { selectedTeam } = useTeam();
 
   const fetchSprints = async (pageNum: number, limit: number) => {
     try {
       setLoading(true);
-      const response: SprintListResponse = await sprintApi.getAllSprints(pageNum + 1, limit);
+      const response: SprintListResponse = await sprintApi.getAllSprints(pageNum + 1, limit, selectedTeam?.id);
       setSprints(response?.sprints || []);
       setTotalCount(response?.total || 0);
       setError(null);
@@ -56,7 +58,7 @@ const SprintList = () => {
 
   useEffect(() => {
     fetchSprints(page, rowsPerPage);
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, selectedTeam]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -137,9 +139,16 @@ const SprintList = () => {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Sprint List
-        </Typography>
+        <Box>
+          <Typography variant="h4" component="h1">
+            Sprint List
+          </Typography>
+          {selectedTeam && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {selectedTeam.name}
+            </Typography>
+          )}
+        </Box>
         <Button
           variant="contained"
           startIcon={<Add />}
