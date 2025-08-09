@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import SprintList from './components/SprintList';
 import SprintPlanningView from './components/SprintPlanningView';
+import TeamManagement from './components/TeamManagement';
 
 const theme = createTheme({
   palette: {
@@ -67,6 +68,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="sprints" element={<SprintList />} />
               <Route path="sprints/:id" element={<SprintPlanningView />} />
+              <Route path="teams" element={<TeamManagement />} />
             </Route>
           </Routes>
         </Router>

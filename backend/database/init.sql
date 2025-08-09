@@ -87,14 +87,24 @@ INSERT INTO `team_member` (`name`, `skill`, `teamId`) VALUES
 -- Insert sample sprints with team assignments
 INSERT INTO `sprint` (`name`, `startDate`, `endDate`, `capacity`, `projectedVelocity`, `completedVelocity`, `teamId`) VALUES
 ('Frontend Sprint 1', '2024-01-01', '2024-01-14', 50, 40, 35, 1),
+('Frontend Sprint 2', '2024-01-15', '2024-01-28', 52, 45, 42, 1),
+('Frontend Sprint 3', '2024-02-01', '2024-02-14', 48, 42, 45, 1),
 ('Backend Sprint 1', '2024-01-01', '2024-01-14', 48, 42, 40, 2),
-('Platform Sprint 1', '2024-01-15', '2024-01-28', 52, 45, 38, 3);
+('Backend Sprint 2', '2024-01-15', '2024-01-28', 50, 45, 48, 2),
+('Backend Sprint 3', '2024-02-01', '2024-02-14', 46, 40, 44, 2),
+('Platform Sprint 1', '2024-01-15', '2024-01-28', 52, 45, 38, 3),
+('Platform Sprint 2', '2024-02-01', '2024-02-14', 50, 42, 41, 3);
 
 -- Insert team member capacity assignments
 INSERT INTO `team_member_sprint_capacity` (`teamMemberId`, `sprintId`, `capacity`) VALUES
--- Frontend Sprint 1 (Alice, Emma from Frontend Team)
-(1, 1, 10), (5, 1, 6),
--- Backend Sprint 1 (Bob, David from Backend Team)
-(2, 2, 12), (4, 2, 8),
--- Platform Sprint 1 (Carol from Platform Team)
-(3, 3, 14);
+-- Frontend Team sprints (Alice, Emma)
+(1, 1, 10), (5, 1, 6),  -- Sprint 1
+(1, 2, 12), (5, 2, 8),  -- Sprint 2
+(1, 3, 9), (5, 3, 7),   -- Sprint 3
+-- Backend Team sprints (Bob, David)
+(2, 4, 12), (4, 4, 8),  -- Sprint 1
+(2, 5, 11), (4, 5, 9),  -- Sprint 2
+(2, 6, 10), (4, 6, 8),  -- Sprint 3
+-- Platform Team sprints (Carol)
+(3, 7, 14),  -- Sprint 1
+(3, 8, 12);  -- Sprint 2

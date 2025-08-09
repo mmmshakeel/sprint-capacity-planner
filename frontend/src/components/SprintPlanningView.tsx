@@ -28,11 +28,13 @@ import dayjs from 'dayjs';
 import { ArrowBack, Calculate, Save, Add, Delete } from '@mui/icons-material';
 import { Sprint, TeamMember, CreateSprintDto, UpdateSprintDto } from '../types';
 import { sprintApi, teamMemberApi } from '../services/api';
+import { useTeam } from '../contexts/TeamContext';
 import TeamMemberAssignmentDialog from './TeamMemberAssignmentDialog';
 
 const SprintPlanningView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { selectedTeam } = useTeam();
   const isNewSprint = id === 'new';
 
   const [sprint, setSprint] = useState<Sprint | null>(null);
@@ -185,6 +187,7 @@ const SprintPlanningView: React.FC = () => {
           name: sprintName,
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
+          teamId: selectedTeam?.id,
           teamMemberCapacities: teamMemberCapacitiesArray
         };
 

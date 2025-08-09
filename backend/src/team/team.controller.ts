@@ -50,4 +50,13 @@ export class TeamController {
   remove(@Param('id') id: string) {
     return this.teamService.remove(+id);
   }
+
+  @Get(':id/analytics')
+  @ApiOperation({ summary: 'Get team analytics' })
+  @ApiParam({ name: 'id', description: 'Team ID' })
+  @ApiResponse({ status: 200, description: 'Team analytics retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  getAnalytics(@Param('id') id: string) {
+    return this.teamService.getAnalytics(+id);
+  }
 }

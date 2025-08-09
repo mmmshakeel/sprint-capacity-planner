@@ -136,6 +136,11 @@ export const teamApi = {
   deleteTeam: async (id: number): Promise<void> => {
     await api.delete(`/teams/${id}`);
   },
+
+  getAnalytics: async (id: number): Promise<any> => {
+    const response = await api.get(`/teams/${id}/analytics`);
+    return response.data;
+  },
 };
 
 export default api;
