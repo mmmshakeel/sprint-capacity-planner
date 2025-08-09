@@ -6,7 +6,19 @@ export interface Sprint {
   capacity: number;
   projectedVelocity: number;
   completedVelocity: number;
+  teamId?: number;
+  team?: Team;
   teamMemberCapacities?: TeamMemberSprintCapacity[];
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  createdAt: string;
+  active: boolean;
+  teamMembers?: TeamMember[];
+  sprints?: Sprint[];
 }
 
 export interface TeamMember {
@@ -15,6 +27,8 @@ export interface TeamMember {
   skill: string;
   updatedTime: string;
   active: boolean;
+  teamId?: number;
+  team?: Team;
   sprintCapacities?: TeamMemberSprintCapacity[];
 }
 
@@ -31,6 +45,7 @@ export interface CreateSprintDto {
   name: string;
   startDate: string;
   endDate: string;
+  teamId?: number;
   teamMemberCapacities: {
     teamMemberId: number;
     capacity: number;
@@ -42,17 +57,31 @@ export interface UpdateSprintDto {
   startDate?: string;
   endDate?: string;
   completedVelocity?: number;
+  teamId?: number;
 }
 
 export interface CreateTeamMemberDto {
   name: string;
   skill: string;
+  teamId?: number;
+}
+
+export interface CreateTeamDto {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateTeamDto {
+  name?: string;
+  description?: string;
+  active?: boolean;
 }
 
 export interface UpdateTeamMemberDto {
   name?: string;
   skill?: string;
   active?: boolean;
+  teamId?: number;
 }
 
 export interface SprintListResponse {

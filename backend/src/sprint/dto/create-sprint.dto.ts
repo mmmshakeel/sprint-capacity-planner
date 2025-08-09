@@ -36,4 +36,9 @@ export class CreateSprintDto {
   @ValidateNested({ each: true })
   @Type(() => TeamMemberCapacityDto)
   teamMemberCapacities?: TeamMemberCapacityDto[];
+
+  @ApiPropertyOptional({ description: 'Team ID', example: 1 })
+  @IsOptional()
+  @IsNumber()
+  teamId?: number;
 }

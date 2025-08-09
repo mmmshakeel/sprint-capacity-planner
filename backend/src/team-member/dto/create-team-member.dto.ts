@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTeamMemberDto {
@@ -14,4 +14,9 @@ export class CreateTeamMemberDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ description: 'Team ID', example: 1 })
+  @IsOptional()
+  @IsNumber()
+  teamId?: number;
 }

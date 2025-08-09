@@ -2,10 +2,13 @@ import axios from 'axios';
 import {
   Sprint,
   TeamMember,
+  Team,
   CreateSprintDto,
   UpdateSprintDto,
   CreateTeamMemberDto,
   UpdateTeamMemberDto,
+  CreateTeamDto,
+  UpdateTeamDto,
   SprintListResponse,
   WorkingDaysResponse,
   ProjectedVelocityResponse,
@@ -21,8 +24,10 @@ const api = axios.create({
 });
 
 export const sprintApi = {
-  getAllSprints: async (page: number = 1, limit: number = 10): Promise<SprintListResponse> => {
-    const response = await api.get(`/sprints?page=${page}&limit=${limit}`);
+  getAllSprints: async (page: number = 1, limit: number = 10, teamId?: number): Promise<SprintListResponse> => {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    if (teamId) params.append('teamId', teamId.toString());
+    const response = await api.get(`/sprints?${params.toString()}`);
     return response.data;
   },
 
@@ -75,8 +80,9 @@ export const sprintApi = {
 };
 
 export const teamMemberApi = {
-  getAllTeamMembers: async (): Promise<TeamMember[]> => {
-    const response = await api.get('/team-members');
+  getAllTeamMembers: async (teamId?: number): Promise<TeamMember[]> => {
+    const params = teamId ? `?teamId=${teamId}` : '';
+    const response = await api.get(`/team-members${params}`);
     return response.data;
   },
 
@@ -99,8 +105,40 @@ export const teamMemberApi = {
     await api.delete(`/team-members/${id}`);
   },
 
-  getSkills: async (): Promise<string[]> => {
-    const response = await api.get('/team-members/skills');
+  getSkills: async (teamId?: number): Promise<string[]> => {
+    const params = teamId ? `?teamId=${teamId}` : '';
+    const response = await api.get(`/team-members/skills${params}`);
+    return response.data;
+  },
+};
+
+export const teamApi = {
+  getAllTeams: async (): Promise<Team[]> => {
+    const response = await api.get('/teams');
+    return response.data;
+  },
+
+  getTeamById: async (id: number): Promise<Team> => {
+    const response = await api.get(`/teams/${id}`);
+    return response.data;
+  },
+
+  createTeam: async (data: CreateTeamDto): Promise<Team> => {
+    const response = await api.post('/teams', data);
+    return response.data;
+  },
+
+  updateTeam: async (id: number, data: UpdateTeamDto): Promise<Team> => {
+    const response = await api.patch(`/teams/${id}`, data);
+    return response.data;
+  },
+
+  deleteTeam: async (id: number): Promise<void> => {
+    await api.delete(`/teams/${id}`);
+  },
+
+  getAnalytics: async (id: number): Promise<any> => {
+    const response = await api.get(`/teams/${id}/analytics`);
     return response.data;
   },
 };

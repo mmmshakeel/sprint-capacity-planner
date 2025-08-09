@@ -21,9 +21,14 @@ export class SprintController {
   @ApiOperation({ summary: 'Get all sprints with pagination' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: 10 })
+  @ApiQuery({ name: 'teamId', required: false, description: 'Filter by team ID' })
   @ApiResponse({ status: 200, description: 'List of sprints returned successfully' })
-  findAll(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
-    return this.sprintService.findAll(+page, +limit);
+  findAll(
+    @Query('page') page: string = '1', 
+    @Query('limit') limit: string = '10',
+    @Query('teamId') teamId?: string
+  ) {
+    return this.sprintService.findAll(+page, +limit, teamId ? +teamId : undefined);
   }
 
   @Get('working-days')

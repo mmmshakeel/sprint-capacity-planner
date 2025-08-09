@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { TeamMemberSprintCapacity } from './team-member-sprint-capacity.entity';
+import { Team } from './team.entity';
 
 @Entity()
 export class Sprint {
@@ -23,6 +24,13 @@ export class Sprint {
 
   @Column({ type: 'int', default: 0 })
   completedVelocity: number;
+
+  @Column({ type: 'int', nullable: true })
+  teamId: number;
+
+  @ManyToOne(() => Team, (team) => team.sprints)
+  @JoinColumn({ name: 'teamId' })
+  team: Team;
 
   @OneToMany(() => TeamMemberSprintCapacity, (tmsc) => tmsc.sprint)
   teamMemberCapacities: TeamMemberSprintCapacity[];

@@ -6,8 +6,10 @@ import { AppService } from './app.service';
 import { Sprint } from './entities/sprint.entity';
 import { TeamMember } from './entities/team-member.entity';
 import { TeamMemberSprintCapacity } from './entities/team-member-sprint-capacity.entity';
+import { Team } from './entities/team.entity';
 import { SprintModule } from './sprint/sprint.module';
 import { TeamMemberModule } from './team-member/team-member.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { TeamMemberModule } from './team-member/team-member.module';
       username: process.env.DATABASE_USER || 'dbuser',
       password: process.env.DATABASE_PASSWORD || 'dbpassword',
       database: process.env.DATABASE_NAME || 'mydb',
-      entities: [Sprint, TeamMember, TeamMemberSprintCapacity],
+      entities: [Sprint, TeamMember, TeamMemberSprintCapacity, Team],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: ['error', 'warn'],
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -30,6 +32,7 @@ import { TeamMemberModule } from './team-member/team-member.module';
     }),
     SprintModule,
     TeamMemberModule,
+    TeamModule,
   ],
   controllers: [AppController],
   providers: [AppService],

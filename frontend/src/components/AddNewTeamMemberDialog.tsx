@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { teamMemberApi } from '../services/api';
 import { CreateTeamMemberDto } from '../types';
+import { useTeam } from '../contexts/TeamContext';
 
 interface AddNewTeamMemberDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ const AddNewTeamMemberDialog: React.FC<AddNewTeamMemberDialogProps> = ({ open, o
   const [skill, setSkill] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { selectedTeam } = useTeam();
 
   const handleCreate = async () => {
     if (!name || !skill) {
@@ -35,7 +37,7 @@ const AddNewTeamMemberDialog: React.FC<AddNewTeamMemberDialogProps> = ({ open, o
       setSubmitting(true);
       setError(null);
 
-      const createDto: CreateTeamMemberDto = { name, skill };
+      const createDto: CreateTeamMemberDto = { name, skill, teamId: selectedTeam?.id };
       await teamMemberApi.createTeamMember(createDto);
 
       onTeamMemberCreated();

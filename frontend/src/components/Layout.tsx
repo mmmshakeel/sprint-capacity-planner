@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Box, Container, useTheme, useMediaQuery } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
+import TeamSelector from './TeamSelector';
 
 const Layout: React.FC = () => {
   const theme = useTheme();
@@ -27,6 +28,12 @@ const Layout: React.FC = () => {
           >
             Sprint Capacity Planner
           </Typography>
+          <Box sx={{ ml: 2 }}>
+            <TeamSelector 
+              variant="outlined" 
+              size="small" 
+            />
+          </Box>
         </Toolbar>
       </AppBar>
       
