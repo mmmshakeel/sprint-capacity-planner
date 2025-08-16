@@ -1,33 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Button,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Alert,
-  CircularProgress,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-} from '@mui/material';
-import { Add, Edit, Delete, Group, Person, SwapHoriz } from '@mui/icons-material';
 import { Team, CreateTeamDto, UpdateTeamDto } from '../types';
 import { teamApi, teamMemberApi, sprintApi } from '../services/api';
 import { useTeam } from '../contexts/TeamContext';
+import { Button, IconButton, Dialog, DialogActions, TextField, Card, CardContent, Chip, Icon } from '../ui';
 import BulkTeamMemberAssignment from './BulkTeamMemberAssignment';
 
 interface TeamStats {
@@ -160,129 +135,165 @@ const TeamManagement: React.FC = () => {
   };
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
+    <div style={{ padding: '24px' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <h1 style={{
+          margin: 0,
+          fontSize: 'var(--md-sys-typescale-display-small-size)',
+          fontWeight: 'var(--md-sys-typescale-display-small-weight)',
+          color: 'var(--md-sys-color-on-surface)'
+        }}>
           Team Management
-        </Typography>
-        <Box display="flex" gap={2}>
+        </h1>
+        <div style={{ display: 'flex', gap: '12px' }}>
           <Button
             variant="outlined"
-            startIcon={<SwapHoriz />}
             onClick={() => setBulkAssignmentOpen(true)}
           >
+            <Icon name="swap_horiz" style={{ marginRight: '8px' }} />
             Manage Members
           </Button>
           <Button
-            variant="contained"
-            startIcon={<Add />}
+            variant="filled"
             onClick={handleCreateTeam}
           >
+            <Icon name="add" style={{ marginRight: '8px' }} />
             New Team
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <div style={{
+          backgroundColor: 'var(--md-sys-color-error-container)',
+          color: 'var(--md-sys-color-on-error-container)',
+          padding: '16px',
+          borderRadius: 'var(--md-sys-shape-corner-medium)',
+          marginBottom: '24px'
+        }}>
           {error}
-        </Alert>
+        </div>
       )}
 
-      <Grid container spacing={3}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+        gap: '24px',
+        marginBottom: '24px'
+      }}>
         {teams.map((team) => (
-          <Grid item xs={12} md={6} lg={4} key={team.id}>
-            <Card 
-              variant="outlined"
-              sx={{ 
-                height: '100%',
-                border: selectedTeam?.id === team.id ? 2 : 1,
-                borderColor: selectedTeam?.id === team.id ? 'primary.main' : 'divider'
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                  <Typography variant="h6" component="h2">
-                    {team.name}
-                  </Typography>
-                  <Box>
-                    <IconButton size="small" onClick={() => handleEditTeam(team)}>
-                      <Edit />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteTeam(team)}>
-                      <Delete />
-                    </IconButton>
-                  </Box>
-                </Box>
+          <Card 
+            key={team.id}
+            elevation={2}
+            style={{ 
+              height: '100%',
+              border: selectedTeam?.id === team.id 
+                ? '2px solid var(--md-sys-color-primary)' 
+                : '1px solid var(--md-sys-color-outline-variant)'
+            }}
+          >
+            <CardContent>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'flex-start', 
+                marginBottom: '16px'
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: 'var(--md-sys-typescale-title-large-size)',
+                  fontWeight: 'var(--md-sys-typescale-title-large-weight)',
+                  color: 'var(--md-sys-color-on-surface)'
+                }}>
+                  {team.name}
+                </h2>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <IconButton onClick={() => handleEditTeam(team)} ariaLabel="Edit team">
+                    <Icon name="edit" />
+                  </IconButton>
+                  <IconButton onClick={() => handleDeleteTeam(team)} ariaLabel="Delete team">
+                    <Icon name="delete" />
+                  </IconButton>
+                </div>
+              </div>
 
-                {team.description && (
-                  <Typography variant="body2" color="text.secondary" mb={2}>
-                    {team.description}
-                  </Typography>
-                )}
+              {team.description && (
+                <p style={{
+                  margin: '0 0 16px 0',
+                  fontSize: 'var(--md-sys-typescale-body-medium-size)',
+                  color: 'var(--md-sys-color-on-surface-variant)'
+                }}>
+                  {team.description}
+                </p>
+              )}
 
-                <Box display="flex" gap={1} mb={2}>
-                  <Chip
-                    icon={<Person />}
-                    label={`${teamStats[team.id]?.memberCount || 0} Members`}
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Chip
-                    icon={<Group />}
-                    label={`${teamStats[team.id]?.sprintCount || 0} Sprints`}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Box>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                <Chip
+                  icon={<Icon name="person" />}
+                  label={`${teamStats[team.id]?.memberCount || 0} Members`}
+                  size="small"
+                  variant="outlined"
+                />
+                <Chip
+                  icon={<Icon name="group" />}
+                  label={`${teamStats[team.id]?.sprintCount || 0} Sprints`}
+                  size="small"
+                  variant="outlined"
+                />
+              </div>
 
-                <Typography variant="caption" color="text.secondary">
-                  Created: {new Date(team.createdAt).toLocaleDateString()}
-                </Typography>
+              <p style={{
+                margin: 0,
+                fontSize: 'var(--md-sys-typescale-body-small-size)',
+                color: 'var(--md-sys-color-on-surface-variant)'
+              }}>
+                Created: {new Date(team.createdAt).toLocaleDateString()}
+              </p>
 
-                {selectedTeam?.id === team.id && (
-                  <Box mt={2}>
-                    <Chip label="Currently Selected" color="primary" size="small" />
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+              {selectedTeam?.id === team.id && (
+                <div style={{ marginTop: '16px' }}>
+                  <Chip label="Currently Selected" color="primary" size="small" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         ))}
-      </Grid>
+      </div>
 
       {/* Create/Edit Team Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingTeam ? 'Edit Team' : 'Create New Team'}
-        </DialogTitle>
-        <DialogContent>
-          <Box>
-            <TextField
-              fullWidth
-              label="Team Name"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              sx={{ mb: 2, mt: 1 }}
-              autoFocus
-            />
-            <TextField
-              fullWidth
-              label="Description (optional)"
-              value={teamDescription}
-              onChange={(e) => setTeamDescription(e.target.value)}
-              multiline
-              rows={3}
-            />
-          </Box>
-        </DialogContent>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)} 
+        headline={editingTeam ? 'Edit Team' : 'Create New Team'}
+      >
+        <div style={{ padding: '16px 0' }}>
+          <TextField
+            label="Team Name"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            style={{ width: '100%', marginBottom: '16px' }}
+          />
+          <TextField
+            label="Description (optional)"
+            value={teamDescription}
+            onChange={(e) => setTeamDescription(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={submitting}>
+          <Button variant="text" onClick={() => setDialogOpen(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveTeam}
-            variant="contained"
+            variant="filled"
             disabled={submitting || !teamName.trim()}
           >
             {submitting ? 'Saving...' : editingTeam ? 'Update' : 'Create'}
@@ -294,24 +305,25 @@ const TeamManagement: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
+        headline="Delete Team"
       >
-        <DialogTitle>Delete Team</DialogTitle>
-        <DialogContent>
-          <Typography>
+        <div style={{ padding: '16px 0' }}>
+          <p style={{
+            margin: 0,
+            fontSize: 'var(--md-sys-typescale-body-large-size)',
+            color: 'var(--md-sys-color-on-surface)'
+          }}>
             Are you sure you want to delete the team "{teamToDelete?.name}"? 
             This action will deactivate the team but preserve all associated data.
-          </Typography>
-        </DialogContent>
+          </p>
+        </div>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={submitting}>
+          <Button variant="text" onClick={() => setDeleteDialogOpen(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button
             onClick={handleConfirmDelete}
-            variant="contained"
-            color="error"
+            variant="danger"
             disabled={submitting}
           >
             {submitting ? 'Deleting...' : 'Delete'}
@@ -328,7 +340,7 @@ const TeamManagement: React.FC = () => {
           setBulkAssignmentOpen(false);
         }}
       />
-    </Box>
+    </div>
   );
 };
 

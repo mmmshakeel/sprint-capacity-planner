@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Card, CardContent, Button, CircularProgress, Alert } from '@mui/material';
-import { TrendingUp, Group, Timer, Assignment, List, Settings } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTeam } from '../contexts/TeamContext';
 import { sprintApi, teamMemberApi } from '../services/api';
 import { Sprint } from '../types';
+import { Button, Card, CardContent, Icon } from '../ui';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -66,149 +65,236 @@ const Dashboard: React.FC = () => {
 
   if (!selectedTeam) {
     return (
-      <Box p={3}>
-        <Alert severity="info">
+      <div style={{ padding: '24px' }}>
+        <div style={{
+          backgroundColor: 'var(--md-sys-color-surface-variant)',
+          color: 'var(--md-sys-color-on-surface-variant)',
+          padding: '16px',
+          borderRadius: 'var(--md-sys-shape-corner-medium)',
+          border: '1px solid var(--md-sys-color-outline-variant)'
+        }}>
           Please select a team to view the dashboard.
-        </Alert>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" component="h1">
+    <div style={{ padding: '24px' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <div>
+          <h1 style={{
+            margin: 0,
+            fontSize: 'var(--md-sys-typescale-display-small-size)',
+            fontWeight: 'var(--md-sys-typescale-display-small-weight)',
+            lineHeight: 'var(--md-sys-typescale-display-small-line-height)',
+            color: 'var(--md-sys-color-on-surface)'
+          }}>
             Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          </h1>
+          <p style={{
+            margin: '4px 0 0 0',
+            fontSize: 'var(--md-sys-typescale-body-medium-size)',
+            color: 'var(--md-sys-color-on-surface-variant)'
+          }}>
             {selectedTeam.name}
-          </Typography>
-        </Box>
-        <Box display="flex" gap={2}>
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
           <Button
             variant="outlined"
-            startIcon={<Settings />}
             onClick={() => navigate('/teams')}
           >
+            <Icon name="settings" style={{ marginRight: '8px' }} />
             Manage Teams
           </Button>
           <Button
-            variant="contained"
-            startIcon={<List />}
+            variant="filled"
             onClick={() => navigate('/sprints')}
           >
+            <Icon name="list" style={{ marginRight: '8px' }} />
             View Sprints
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
       
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <div style={{
+          backgroundColor: 'var(--md-sys-color-error-container)',
+          color: 'var(--md-sys-color-on-error-container)',
+          padding: '16px',
+          borderRadius: 'var(--md-sys-shape-corner-medium)',
+          marginBottom: '24px'
+        }}>
           {error}
-        </Alert>
+        </div>
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid var(--md-sys-color-outline-variant)',
+            borderTop: '4px solid var(--md-sys-color-primary)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+        </div>
       ) : (
-        <Grid container spacing={3}>
-          {/* Summary Cards */}
-          <Grid item xs={12} sm={6} md={3}>
+        <>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+            gap: '24px',
+            marginBottom: '24px'
+          }}>
+            {/* Summary Cards */}
             <Card elevation={2}>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Assignment color="primary" />
-                  <Typography variant="h6" component="h2" ml={1}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <Icon name="assignment" style={{ color: 'var(--md-sys-color-primary)' }} />
+                  <h2 style={{
+                    margin: '0 0 0 8px',
+                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
+                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
+                    color: 'var(--md-sys-color-on-surface)'
+                  }}>
                     Total Sprints
-                  </Typography>
-                </Box>
-                <Typography variant="h4" color="primary">
+                  </h2>
+                </div>
+                <div style={{
+                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
+                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
+                  color: 'var(--md-sys-color-primary)'
+                }}>
                   {metrics.totalSprints}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+            
             <Card elevation={2}>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Group color="secondary" />
-                  <Typography variant="h6" component="h2" ml={1}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <Icon name="group" style={{ color: 'var(--md-sys-color-secondary)' }} />
+                  <h2 style={{
+                    margin: '0 0 0 8px',
+                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
+                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
+                    color: 'var(--md-sys-color-on-surface)'
+                  }}>
                     Active Members
-                  </Typography>
-                </Box>
-                <Typography variant="h4" color="secondary">
+                  </h2>
+                </div>
+                <div style={{
+                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
+                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
+                  color: 'var(--md-sys-color-secondary)'
+                }}>
                   {metrics.activeMembers}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+            
             <Card elevation={2}>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <TrendingUp color="success" />
-                  <Typography variant="h6" component="h2" ml={1}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <Icon name="trending_up" style={{ color: 'var(--md-sys-color-tertiary)' }} />
+                  <h2 style={{
+                    margin: '0 0 0 8px',
+                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
+                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
+                    color: 'var(--md-sys-color-on-surface)'
+                  }}>
                     Avg Velocity
-                  </Typography>
-                </Box>
-                <Typography variant="h4" color="success">
+                  </h2>
+                </div>
+                <div style={{
+                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
+                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
+                  color: 'var(--md-sys-color-tertiary)'
+                }}>
                   {metrics.avgVelocity || '-'}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+            
             <Card elevation={2}>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Timer color="warning" />
-                  <Typography variant="h6" component="h2" ml={1}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <Icon name="timer" style={{ color: 'var(--md-sys-color-error)' }} />
+                  <h2 style={{
+                    margin: '0 0 0 8px',
+                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
+                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
+                    color: 'var(--md-sys-color-on-surface)'
+                  }}>
                     Current Sprint
-                  </Typography>
-                </Box>
-                <Typography variant="h6" color="warning">
+                  </h2>
+                </div>
+                <div style={{
+                  fontSize: 'var(--md-sys-typescale-title-large-size)',
+                  fontWeight: 'var(--md-sys-typescale-title-large-weight)',
+                  color: 'var(--md-sys-color-error)'
+                }}>
                   {metrics.currentSprint ? metrics.currentSprint.name : 'None'}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          
-        {/* Charts Section */}
-          <Grid item xs={12}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" gutterBottom>
-              Sprint Velocity Chart
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Charts and visualizations will be implemented here
-                            </Typography>
-            <Box 
-              sx={{ 
-                height: 300, 
-                bgcolor: '#f5f5f5', 
- 
+          </div>
+            
+          {/* Charts Section */}
+          <Card elevation={2}>
+            <CardContent style={{ textAlign: 'center' }}>
+              <h2 style={{
+                margin: '0 0 16px 0',
+                fontSize: 'var(--md-sys-typescale-title-large-size)',
+                fontWeight: 'var(--md-sys-typescale-title-large-weight)',
+                color: 'var(--md-sys-color-on-surface)'
+              }}>
+                Sprint Velocity Chart
+              </h2>
+              <p style={{
+                margin: '0 0 16px 0',
+                fontSize: 'var(--md-sys-typescale-body-large-size)',
+                color: 'var(--md-sys-color-on-surface-variant)'
+              }}>
+                Charts and visualizations will be implemented here
+              </p>
+              <div style={{ 
+                height: '300px', 
+                backgroundColor: 'var(--md-sys-color-surface-variant)', 
+                borderRadius: 'var(--md-sys-shape-corner-medium)',
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
-                mt: 2
-              }}
-            >
-              <Typography variant="h6" color="text.secondary">
-                Chart Placeholder
-                              </Typography>
-                            </Box>
-            </Paper>
-          </Grid>
-        </Grid>
+                marginTop: '16px'
+              }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: 'var(--md-sys-typescale-title-medium-size)',
+                  color: 'var(--md-sys-color-on-surface-variant)'
+                }}>
+                  Chart Placeholder
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
-    </Box>
+    </div>
   );
 };
 

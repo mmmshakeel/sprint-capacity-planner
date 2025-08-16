@@ -1,8 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './theme/tokens.css';
+import './material-web';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+
+// Set default theme
+document.documentElement.setAttribute('data-theme', 'light');
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

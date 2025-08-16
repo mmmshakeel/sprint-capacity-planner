@@ -1,19 +1,10 @@
 import React from 'react';
-import {
-  FormControl,
-  Select,
-  MenuItem,
-  CircularProgress,
-  Alert,
-  Box,
-  Typography,
-  SelectChangeEvent,
-} from '@mui/material';
 import { useTeam } from '../contexts/TeamContext';
 import { Team } from '../types';
+import { Select, SelectOption } from '../ui';
 
 interface TeamSelectorProps {
-  variant?: 'standard' | 'outlined' | 'filled';
+  variant?: 'outlined' | 'filled';
   size?: 'small' | 'medium';
   fullWidth?: boolean;
   showLabel?: boolean;
@@ -27,74 +18,107 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
 }) => {
   const { selectedTeam, teams, loading, error, setSelectedTeam } = useTeam();
 
-  const handleChange = (event: SelectChangeEvent<number>) => {
-    const teamId = event.target.value as number;
+  const handleChange = (value: string | number) => {
+    const teamId = Number(value);
     const team = teams.find(t => t.id === teamId) || null;
     setSelectedTeam(team);
   };
 
   if (loading) {
     return (
-      <Box display="flex" alignItems="center" gap={1}>
-        <CircularProgress size={20} />
-        <Typography variant="body2" color="text.secondary">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{
+          width: '20px',
+          height: '20px',
+          border: '2px solid var(--md-sys-color-outline-variant)',
+          borderTop: '2px solid var(--md-sys-color-primary)',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <span style={{
+          fontSize: 'var(--md-sys-typescale-body-small-size)',
+          color: 'var(--md-sys-color-on-surface-variant)'
+        }}>
           Loading teams...
-        </Typography>
-      </Box>
+        </span>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ minWidth: 200 }}>
+      <div style={{
+        minWidth: '200px',
+        backgroundColor: 'var(--md-sys-color-error-container)',
+        color: 'var(--md-sys-color-on-error-container)',
+        padding: '12px',
+        borderRadius: 'var(--md-sys-shape-corner-small)'
+      }}>
         {error}
-      </Alert>
+      </div>
     );
   }
 
   if (teams.length === 0) {
     return (
-      <Alert severity="info" sx={{ minWidth: 200 }}>
+      <div style={{
+        minWidth: '200px',
+        backgroundColor: 'var(--md-sys-color-surface-variant)',
+        color: 'var(--md-sys-color-on-surface-variant)',
+        padding: '12px',
+        borderRadius: 'var(--md-sys-shape-corner-small)'
+      }}>
         No teams found
-      </Alert>
+      </div>
     );
   }
 
   return (
-    <FormControl variant={variant} size={size} fullWidth={fullWidth}>
+    <div style={{ minWidth: fullWidth ? '100%' : '150px' }}>
       {showLabel && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <label style={{
+          display: 'block',
+          fontSize: 'var(--md-sys-typescale-body-small-size)',
+          color: 'var(--md-sys-color-on-surface-variant)',
+          marginBottom: '8px'
+        }}>
           Team
-        </Typography>
+        </label>
       )}
       <Select
+        variant={variant}
         value={selectedTeam?.id || ''}
         onChange={handleChange}
-        displayEmpty
-        sx={{
-          minWidth: 150,
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
+        label="Select Team"
+        style={{ 
+          minWidth: '150px',
+          width: fullWidth ? '100%' : 'auto'
         }}
       >
         {teams.map((team) => (
-          <MenuItem key={team.id} value={team.id}>
-            <Box>
-              <Typography variant="body2" fontWeight="medium">
+          <SelectOption key={team.id} value={team.id}>
+            <div>
+              <div style={{
+                fontSize: 'var(--md-sys-typescale-body-medium-size)',
+                fontWeight: '500',
+                color: 'var(--md-sys-color-on-surface)'
+              }}>
                 {team.name}
-              </Typography>
+              </div>
               {team.description && (
-                <Typography variant="caption" color="text.secondary" display="block">
+                <div style={{
+                  fontSize: 'var(--md-sys-typescale-body-small-size)',
+                  color: 'var(--md-sys-color-on-surface-variant)',
+                  marginTop: '2px'
+                }}>
                   {team.description}
-                </Typography>
+                </div>
               )}
-            </Box>
-          </MenuItem>
+            </div>
+          </SelectOption>
         ))}
       </Select>
-    </FormControl>
+    </div>
   );
 };
 
