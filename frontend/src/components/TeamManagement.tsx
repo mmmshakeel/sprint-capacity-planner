@@ -144,12 +144,7 @@ const TeamManagement: React.FC = () => {
         flexWrap: 'wrap',
         gap: '16px'
       }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: 'var(--md-sys-typescale-display-small-size)',
-          fontWeight: 'var(--md-sys-typescale-display-small-weight)',
-          color: 'var(--md-sys-color-on-surface)'
-        }}>
+        <h1 className="m3-display-small">
           Team Management
         </h1>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -191,12 +186,13 @@ const TeamManagement: React.FC = () => {
         {teams.map((team) => (
           <Card 
             key={team.id}
-            elevation={2}
+            elevation={0}
             style={{ 
               height: '100%',
+              backgroundColor: 'var(--md-sys-color-surface-container-highest)',
               border: selectedTeam?.id === team.id 
                 ? '2px solid var(--md-sys-color-primary)' 
-                : '1px solid var(--md-sys-color-outline-variant)'
+                : 'none'
             }}
           >
             <CardContent>
@@ -206,12 +202,7 @@ const TeamManagement: React.FC = () => {
                 alignItems: 'flex-start', 
                 marginBottom: '16px'
               }}>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: 'var(--md-sys-typescale-title-large-size)',
-                  fontWeight: 'var(--md-sys-typescale-title-large-weight)',
-                  color: 'var(--md-sys-color-on-surface)'
-                }}>
+                <h2 className="m3-title-medium text-on-surface-variant mt-4 m-0">
                   {team.name}
                 </h2>
                 <div style={{ display: 'flex', gap: '4px' }}>
@@ -225,11 +216,7 @@ const TeamManagement: React.FC = () => {
               </div>
 
               {team.description && (
-                <p style={{
-                  margin: '0 0 16px 0',
-                  fontSize: 'var(--md-sys-typescale-body-medium-size)',
-                  color: 'var(--md-sys-color-on-surface-variant)'
-                }}>
+                <p className='m3-body-large'>
                   {team.description}
                 </p>
               )}
@@ -249,11 +236,7 @@ const TeamManagement: React.FC = () => {
                 />
               </div>
 
-              <p style={{
-                margin: 0,
-                fontSize: 'var(--md-sys-typescale-body-small-size)',
-                color: 'var(--md-sys-color-on-surface-variant)'
-              }}>
+              <p className='m3-body-medium text-on-surface-variant'>
                 Created: {new Date(team.createdAt).toLocaleDateString()}
               </p>
 

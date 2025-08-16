@@ -17,23 +17,20 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
   return (
     <header 
       style={{
-        backgroundColor: 'var(--md-sys-color-surface-container)',
-        color: 'var(--md-sys-color-on-surface)',
+        backgroundColor: 'var(--md-sys-color-surface-variant)',
+        color: 'var(--md-sys-color-on-surface-variant)',
         padding: '16px 24px',
         display: 'flex',
         alignItems: 'center',
-        boxShadow: 'var(--md-sys-elevation-level2)',
+        borderBottom: '1px solid var(--md-sys-color-outline-variant)',
         ...style
       }}
       {...props}
     >
       {headline && (
         <h1 
+          className="m3-title-large m-0"
           style={{
-            margin: 0,
-            fontSize: 'var(--md-sys-typescale-title-large-size)',
-            fontWeight: 'var(--md-sys-typescale-title-large-weight)',
-            lineHeight: 'var(--md-sys-typescale-title-large-line-height)',
             flexGrow: 1,
             cursor: onHeadlineClick ? 'pointer' : 'default'
           }}

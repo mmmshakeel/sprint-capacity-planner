@@ -84,28 +84,14 @@ const Dashboard: React.FC = () => {
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
+        alignItems: 'flex-start', 
+        marginBottom: '24px'
       }}>
         <div>
-          <h1 style={{
-            margin: 0,
-            fontSize: 'var(--md-sys-typescale-display-small-size)',
-            fontWeight: 'var(--md-sys-typescale-display-small-weight)',
-            lineHeight: 'var(--md-sys-typescale-display-small-line-height)',
-            color: 'var(--md-sys-color-on-surface)'
-          }}>
-            Dashboard
-          </h1>
-          <p style={{
-            margin: '4px 0 0 0',
-            fontSize: 'var(--md-sys-typescale-body-medium-size)',
-            color: 'var(--md-sys-color-on-surface-variant)'
-          }}>
-            {selectedTeam.name}
-          </p>
+            <h1 className="m3-display-small m-0">Dashboard</h1>
+            <p className="m3-title-medium text-on-surface-variant mt-4 m-0">
+              {selectedTeam.name}
+            </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <Button
@@ -156,121 +142,73 @@ const Dashboard: React.FC = () => {
       ) : (
         <>
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: '24px',
-            marginBottom: '24px'
+            display: 'flex', 
+            justifyContent: 'space-evenly',
+            marginBottom: '4rem'
           }}>
-            {/* Summary Cards */}
-            <Card elevation={2}>
+            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="assignment" style={{ color: 'var(--md-sys-color-primary)' }} />
-                  <h2 style={{
-                    margin: '0 0 0 8px',
-                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
-                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
-                    color: 'var(--md-sys-color-on-surface)'
-                  }}>
+                  <h2 className="m3-title-medium text-on-surface m-0" style={{ marginLeft: '8px' }}>
                     Total Sprints
                   </h2>
                 </div>
-                <div style={{
-                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
-                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
-                  color: 'var(--md-sys-color-primary)'
-                }}>
+                <div className="m3-display-medium text-primary">
                   {metrics.totalSprints}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2}>
+            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="group" style={{ color: 'var(--md-sys-color-secondary)' }} />
-                  <h2 style={{
-                    margin: '0 0 0 8px',
-                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
-                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
-                    color: 'var(--md-sys-color-on-surface)'
-                  }}>
+                  <h2 className="m3-title-medium text-on-surface m-0" style={{ marginLeft: '8px' }}>
                     Active Members
                   </h2>
                 </div>
-                <div style={{
-                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
-                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
-                  color: 'var(--md-sys-color-secondary)'
-                }}>
+                <div className="m3-display-medium text-secondary">
                   {metrics.activeMembers}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2}>
+            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="trending_up" style={{ color: 'var(--md-sys-color-tertiary)' }} />
-                  <h2 style={{
-                    margin: '0 0 0 8px',
-                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
-                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
-                    color: 'var(--md-sys-color-on-surface)'
-                  }}>
+                  <h2 className="m3-title-medium text-on-surface m-0" style={{ marginLeft: '8px' }}>
                     Avg Velocity
                   </h2>
                 </div>
-                <div style={{
-                  fontSize: 'var(--md-sys-typescale-display-medium-size)',
-                  fontWeight: 'var(--md-sys-typescale-display-medium-weight)',
-                  color: 'var(--md-sys-color-tertiary)'
-                }}>
+                <div className="m3-display-medium text-tertiary">
                   {metrics.avgVelocity || '-'}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2}>
+            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="timer" style={{ color: 'var(--md-sys-color-error)' }} />
-                  <h2 style={{
-                    margin: '0 0 0 8px',
-                    fontSize: 'var(--md-sys-typescale-title-medium-size)',
-                    fontWeight: 'var(--md-sys-typescale-title-medium-weight)',
-                    color: 'var(--md-sys-color-on-surface)'
-                  }}>
+                  <h2 className="m3-title-medium text-on-surface m-0" style={{ marginLeft: '8px' }}>
                     Current Sprint
                   </h2>
                 </div>
-                <div style={{
-                  fontSize: 'var(--md-sys-typescale-title-large-size)',
-                  fontWeight: 'var(--md-sys-typescale-title-large-weight)',
-                  color: 'var(--md-sys-color-error)'
-                }}>
+                <div className="m3-title-large text-error">
                   {metrics.currentSprint ? metrics.currentSprint.name : 'None'}
                 </div>
               </CardContent>
             </Card>
           </div>
-            
-          {/* Charts Section */}
+          
           <Card elevation={2}>
             <CardContent style={{ textAlign: 'center' }}>
-              <h2 style={{
-                margin: '0 0 16px 0',
-                fontSize: 'var(--md-sys-typescale-title-large-size)',
-                fontWeight: 'var(--md-sys-typescale-title-large-weight)',
-                color: 'var(--md-sys-color-on-surface)'
-              }}>
+              <h2 className="m3-title-large text-on-surface m-0" style={{ marginBottom: '16px' }}>
                 Sprint Velocity Chart
               </h2>
-              <p style={{
-                margin: '0 0 16px 0',
-                fontSize: 'var(--md-sys-typescale-body-large-size)',
-                color: 'var(--md-sys-color-on-surface-variant)'
-              }}>
+              <p className="m3-body-large text-on-surface-variant" style={{ margin: '0 0 16px 0' }}>
                 Charts and visualizations will be implemented here
               </p>
               <div style={{ 
@@ -282,11 +220,7 @@ const Dashboard: React.FC = () => {
                 justifyContent: 'center',
                 marginTop: '16px'
               }}>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: 'var(--md-sys-typescale-title-medium-size)',
-                  color: 'var(--md-sys-color-on-surface-variant)'
-                }}>
+                <h3 className="m3-title-medium text-on-surface-variant m-0">
                   Chart Placeholder
                 </h3>
               </div>

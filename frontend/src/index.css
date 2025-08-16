@@ -11,6 +11,39 @@ body {
   color: var(--md-sys-color-on-surface);
 }
 
+/* M3 typography helpers */
+.m3-display-large { font-size: var(--md-sys-typescale-display-large-font-size); font-weight: var(--md-sys-typescale-display-large-font-weight); line-height: var(--md-sys-typescale-display-large-line-height); }
+.m3-display-medium { font-size: var(--md-sys-typescale-display-medium-font-size); font-weight: var(--md-sys-typescale-display-medium-font-weight); line-height: var(--md-sys-typescale-display-medium-line-height); }
+.m3-display-small { font-size: var(--md-sys-typescale-display-small-font-size); font-weight: var(--md-sys-typescale-display-small-font-weight); line-height: var(--md-sys-typescale-display-small-line-height); }
+
+.m3-headline-large { font-size: var(--md-sys-typescale-headline-large-font-size); font-weight: var(--md-sys-typescale-headline-large-font-weight); line-height: var(--md-sys-typescale-headline-large-line-height); }
+.m3-headline-medium { font-size: var(--md-sys-typescale-headline-medium-font-size); font-weight: var(--md-sys-typescale-headline-medium-font-weight); line-height: var(--md-sys-typescale-headline-medium-line-height); }
+.m3-headline-small { font-size: var(--md-sys-typescale-headline-small-font-size); font-weight: var(--md-sys-typescale-headline-small-font-weight); line-height: var(--md-sys-typescale-headline-small-line-height); }
+
+.m3-title-large { font-size: var(--md-sys-typescale-title-large-font-size); font-weight: var(--md-sys-typescale-title-large-font-weight); line-height: var(--md-sys-typescale-title-large-line-height); }
+.m3-title-medium { font-size: var(--md-sys-typescale-title-medium-font-size); font-weight: var(--md-sys-typescale-title-medium-font-weight); line-height: var(--md-sys-typescale-title-medium-line-height); }
+.m3-title-small { font-size: var(--md-sys-typescale-title-small-font-size); font-weight: var(--md-sys-typescale-title-small-font-weight); line-height: var(--md-sys-typescale-title-small-line-height); }
+
+.m3-body-large { font-size: var(--md-sys-typescale-body-large-font-size); font-weight: var(--md-sys-typescale-body-large-font-weight); line-height: var(--md-sys-typescale-body-large-line-height); }
+.m3-body-medium { font-size: var(--md-sys-typescale-body-medium-font-size); font-weight: var(--md-sys-typescale-body-medium-font-weight); line-height: var(--md-sys-typescale-body-medium-line-height); }
+.m3-body-small { font-size: var(--md-sys-typescale-body-small-font-size); font-weight: var(--md-sys-typescale-body-small-font-weight); line-height: var(--md-sys-typescale-body-small-line-height); }
+
+.m3-label-large { font-size: var(--md-sys-typescale-label-large-font-size); font-weight: var(--md-sys-typescale-label-large-font-weight); line-height: var(--md-sys-typescale-label-large-line-height); }
+.m3-label-medium { font-size: var(--md-sys-typescale-label-medium-font-size); font-weight: var(--md-sys-typescale-label-medium-font-weight); line-height: var(--md-sys-typescale-label-medium-line-height); }
+.m3-label-small { font-size: var(--md-sys-typescale-label-small-font-size); font-weight: var(--md-sys-typescale-label-small-font-weight); line-height: var(--md-sys-typescale-label-small-line-height); }
+
+/* Color helpers */
+.text-on-surface { color: var(--md-sys-color-on-surface); }
+.text-on-surface-variant { color: var(--md-sys-color-on-surface-variant); }
+.text-primary { color: var(--md-sys-color-primary); }
+.text-secondary { color: var(--md-sys-color-secondary); }
+.text-tertiary { color: var(--md-sys-color-tertiary); }
+.text-error { color: var(--md-sys-color-error); }
+
+/* Spacing helpers (minimal) */
+.m-0 { margin: 0; }
+.mt-4 { margin-top: 4px; }
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
