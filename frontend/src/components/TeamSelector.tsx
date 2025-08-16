@@ -97,24 +97,10 @@ const TeamSelector: React.FC<TeamSelectorProps> = ({
       >
         {teams.map((team) => (
           <SelectOption key={team.id} value={team.id}>
-            <div>
-              <div style={{
-                fontSize: 'var(--md-sys-typescale-body-medium-size)',
-                fontWeight: '500',
-                color: 'var(--md-sys-color-on-surface)'
-              }}>
-                {team.name}
-              </div>
-              {team.description && (
-                <div style={{
-                  fontSize: 'var(--md-sys-typescale-body-small-size)',
-                  color: 'var(--md-sys-color-on-surface-variant)',
-                  marginTop: '2px'
-                }}>
-                  {team.description}
-                </div>
-              )}
-            </div>
+            <div slot="headline">{team.name}</div>
+            {team.description && (
+              <div slot="supporting-text">{team.description}</div>
+            )}
           </SelectOption>
         ))}
       </Select>
