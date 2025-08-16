@@ -97,14 +97,11 @@ INSERT INTO `sprint` (`name`, `startDate`, `endDate`, `capacity`, `projectedVelo
 
 -- Insert team member capacity assignments
 INSERT INTO `team_member_sprint_capacity` (`teamMemberId`, `sprintId`, `capacity`) VALUES
--- Frontend Team sprints (Alice, Emma)
-(1, 1, 10), (5, 1, 6),  -- Sprint 1
-(1, 2, 12), (5, 2, 8),  -- Sprint 2
-(1, 3, 9), (5, 3, 7),   -- Sprint 3
--- Backend Team sprints (Bob, David)
-(2, 4, 12), (4, 4, 8),  -- Sprint 1
-(2, 5, 11), (4, 5, 9),  -- Sprint 2
-(2, 6, 10), (4, 6, 8),  -- Sprint 3
--- Platform Team sprints (Carol)
-(3, 7, 14),  -- Sprint 1
-(3, 8, 12);  -- Sprint 2
+(1, 1, 10), (5, 1, 6),
+(1, 2, 12), (5, 2, 8),
+(1, 3, 9), (5, 3, 7),
+(2, 4, 12), (4, 4, 8),
+(2, 5, 11), (4, 5, 9),
+(2, 6, 10), (4, 6, 8),
+(3, 7, 14),
+(3, 8, 12);

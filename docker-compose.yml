@@ -19,13 +19,8 @@ services:
     restart: on-failure
     ports:
       - "3300:3300"
-    environment:
-      DATABASE_HOST: mysql
-      DATABASE_PORT: 3306
-      DATABASE_NAME: mydb
-      DATABASE_USER: dbuser
-      DATABASE_PASSWORD: dbpassword
-      PORT: 3300
+    env_file:
+      - ./backend/.env
     depends_on:
       - mysql
     volumes:
