@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { TeamProvider } from './contexts/TeamContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -35,9 +36,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <AccessibilityProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </AccessibilityProvider>
   );
 }
 

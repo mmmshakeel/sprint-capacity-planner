@@ -398,7 +398,7 @@ const SprintPlanningView: React.FC = () => {
               </Box>
 
               {projectedVelocity !== null && projectedVelocity > 0 && (
-                <Card variant="outlined" sx={{ mt: 2, bgcolor: '#f5f5f5' }}>
+                <Card variant="outlined" sx={{ mt: 2, bgcolor: 'action.hover' }}>
                   <CardContent>
                     <Typography variant="h6" color="primary">
                       Projected Velocity Suggestion: {projectedVelocity}
@@ -456,7 +456,7 @@ const SprintPlanningView: React.FC = () => {
                 <TableContainer>
                   <Table>
                     <TableHead>
-                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableRow sx={{ backgroundColor: 'action.hover' }}>
                         <TableCell><strong>Name</strong></TableCell>
                         <TableCell><strong>Skill</strong></TableCell>
                         <TableCell><strong>Availability (days)</strong></TableCell>

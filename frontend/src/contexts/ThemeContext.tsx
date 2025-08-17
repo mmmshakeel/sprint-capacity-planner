@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Theme } from '@mui/material/styles';
 import { createAppTheme } from '../theme';
+import { prefersReducedMotion } from '../utils/accessibility';
 
 type ThemeMode = 'light' | 'dark';
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -11,6 +12,8 @@ interface ThemeContextType {
   userPreference: ThemePreference;
   toggleTheme: () => void;
   setThemePreference: (preference: ThemePreference) => void;
+  isTransitioning: boolean;
+  reducedMotion: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -59,11 +62,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     calculateThemeMode(getStoredThemePreference(), getSystemThemePreference())
   );
   const [theme, setTheme] = useState<Theme>(() => createAppTheme(mode));
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Listen for system theme changes
+  // Listen for system theme and motion preference changes
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia) {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const motionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       
       const handleSystemThemeChange = (e: MediaQueryListEvent) => {
         const newSystemPreference = e.matches ? 'dark' : 'light';
@@ -75,29 +82,45 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         }
       };
 
-      // Add listener for system theme changes
-      if (mediaQuery.addEventListener) {
-        mediaQuery.addEventListener('change', handleSystemThemeChange);
-      } else {
-        // Fallback for older browsers
-        mediaQuery.addListener(handleSystemThemeChange);
-      }
+      const handleMotionPreferenceChange = (e: MediaQueryListEvent) => {
+        setReducedMotion(e.matches);
+      };
+
+      // Add listeners using modern addEventListener
+      themeMediaQuery.addEventListener('change', handleSystemThemeChange);
+      motionMediaQuery.addEventListener('change', handleMotionPreferenceChange);
 
       return () => {
-        if (mediaQuery.removeEventListener) {
-          mediaQuery.removeEventListener('change', handleSystemThemeChange);
-        } else {
-          // Fallback for older browsers
-          mediaQuery.removeListener(handleSystemThemeChange);
-        }
+        themeMediaQuery.removeEventListener('change', handleSystemThemeChange);
+        motionMediaQuery.removeEventListener('change', handleMotionPreferenceChange);
       };
     }
   }, [userPreference]);
 
-  // Update theme when mode changes
+  // Update theme when mode changes with transition management
   useEffect(() => {
+    setIsTransitioning(true);
+    
+    // Clear any existing timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    
+    // Update theme immediately
     setTheme(createAppTheme(mode));
-  }, [mode]);
+    
+    // End transition after a brief delay (or immediately if reduced motion)
+    const transitionDuration = reducedMotion ? 0 : 150;
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, transitionDuration);
+    
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [mode, reducedMotion]);
 
   // Update mode when user preference or system preference changes
   useEffect(() => {
@@ -117,9 +140,27 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   const toggleTheme = () => {
+    // Preserve focus during theme transition
+    const activeElement = document.activeElement as HTMLElement;
+    
     // Toggle between light and dark, ignoring system preference
     const newPreference = mode === 'light' ? 'dark' : 'light';
     setThemePreference(newPreference);
+    
+    // Restore focus after theme change if element still exists and is focusable
+    if (activeElement && typeof activeElement.focus === 'function') {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        try {
+          if (document.contains(activeElement)) {
+            activeElement.focus();
+          }
+        } catch (error) {
+          // Silently handle focus restoration errors
+          console.debug('Could not restore focus after theme change:', error);
+        }
+      });
+    }
   };
 
   const contextValue: ThemeContextType = {
@@ -128,6 +169,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     userPreference,
     toggleTheme,
     setThemePreference,
+    isTransitioning,
+    reducedMotion,
   };
 
   return (
