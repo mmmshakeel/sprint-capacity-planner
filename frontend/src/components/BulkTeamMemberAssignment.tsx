@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Alert,
-  CircularProgress,
-  Chip,
-} from '@mui/material';
-import { Close } from '@mui/icons-material';
-import { TeamMember, Team } from '../types';
-import { teamMemberApi, teamApi } from '../services/api';
+import { Button, Dialog, DialogActions, Select, SelectOption, IconButton, Icon, Chip } from '../ui';
+import { TeamMember } from '../types';
+import { teamMemberApi } from '../services/api';
 import { useTeam } from '../contexts/TeamContext';
 
 interface BulkTeamMemberAssignmentProps {
@@ -127,127 +106,126 @@ const BulkTeamMemberAssignment: React.FC<BulkTeamMemberAssignmentProps> = ({
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        Bulk Team Member Assignment
-      </DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} headline="Bulk Team Member Assignment" fullWidth>
+      <div>
         {loading ? (
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
-          </Box>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
+            <span className="m3-body-large text-on-surface-variant">Loading…</span>
+          </div>
         ) : (
-          <Box>
+          <div>
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <div style={{
+                backgroundColor: 'var(--md-sys-color-error-container)',
+                color: 'var(--md-sys-color-on-error-container)',
+                padding: '12px 16px',
+                borderRadius: 'var(--md-sys-shape-corner-medium)',
+                marginBottom: '16px'
+              }}>
                 {error}
-              </Alert>
+              </div>
             )}
 
-            <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>Target Team</InputLabel>
+            <div style={{ marginBottom: '16px' }}>
+              <label className="m3-body-medium text-on-surface-variant" style={{ display: 'block', marginBottom: '8px' }}>Target Team</label>
               <Select
-                value={selectedTeamId}
-                label="Target Team"
-                onChange={(e) => handleTeamChange(e.target.value)}
+                value={selectedTeamId === '' ? '' : selectedTeamId}
+                onChange={(value) => handleTeamChange(value as string | number)}
+                variant="outlined"
+                style={{ width: '100%' }}
               >
-                <MenuItem value="">
-                  <em>Select a team</em>
-                </MenuItem>
+                <SelectOption value="">Select a team</SelectOption>
                 {teams.map((team) => (
-                  <MenuItem key={team.id} value={team.id}>
-                    {team.name}
-                  </MenuItem>
+                  <SelectOption key={team.id} value={team.id}>{team.name}</SelectOption>
                 ))}
               </Select>
-            </FormControl>
+            </div>
 
             {selectedTeamId && (
-              <Box>
-                {/* Current Team Members */}
-                <Typography variant="h6" gutterBottom>
+              <div>
+                <h3 className="m3-title-medium" style={{ margin: '16px 0 8px' }}>
                   Current {selectedTeam?.name} Members ({assignedMembers.length})
-                </Typography>
+                </h3>
                 {assignedMembers.length > 0 ? (
-                  <List sx={{ mb: 3, maxHeight: 200, overflow: 'auto' }}>
-                    {assignedMembers.map((member) => (
-                      <ListItem key={member.id} divider>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Chip label={member.skill} size="small" variant="outlined" />
-                              {member.teamId !== Number(selectedTeamId) && (
-                                <Typography variant="caption" color="text.secondary">
-                                  (from {teams.find(t => t.id === member.teamId)?.name || 'Unknown Team'})
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <IconButton
-                            edge="end"
-                            onClick={() => handleRemoveFromTeam(member)}
-                            size="small"
-                          >
-                            <Close />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
+                  <div style={{
+                    marginBottom: '16px',
+                    maxHeight: '200px',
+                    overflow: 'auto',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                    borderRadius: 'var(--md-sys-shape-corner-medium)'
+                  }}>
+                    {assignedMembers.map((member, idx) => (
+                      <div key={member.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        borderBottom: idx === assignedMembers.length - 1 ? 'none' : '1px solid var(--md-sys-color-outline-variant)'
+                      }}>
+                        <div>
+                          <div className="m3-body-large">{member.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                            <Chip label={member.skill} size="small" variant="outlined" />
+                            {member.teamId !== Number(selectedTeamId) && (
+                              <span className="m3-body-small text-on-surface-variant">(from {teams.find(t => t.id === member.teamId)?.name || 'Unknown Team'})</span>
+                            )}
+                          </div>
+                        </div>
+                        <IconButton ariaLabel="Remove from team" onClick={() => handleRemoveFromTeam(member)}>
+                          <Icon name="close" />
+                        </IconButton>
+                      </div>
                     ))}
-                  </List>
+                  </div>
                 ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  <p className="m3-body-medium text-on-surface-variant" style={{ marginBottom: '16px' }}>
                     No members currently assigned to this team.
-                  </Typography>
+                  </p>
                 )}
 
-                {/* Unassigned Members */}
-                <Typography variant="h6" gutterBottom>
+                <h3 className="m3-title-medium" style={{ margin: '16px 0 8px' }}>
                   Unassigned Members ({unassignedMembers.length})
-                </Typography>
+                </h3>
                 {unassignedMembers.length > 0 ? (
-                  <List sx={{ maxHeight: 200, overflow: 'auto' }}>
-                    {unassignedMembers.map((member) => (
-                      <ListItem key={member.id} divider>
-                        <ListItemText
-                          primary={member.name}
-                          secondary={<Chip label={member.skill} size="small" variant="outlined" />}
-                        />
-                        <ListItemSecondaryAction>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleAssignToTeam(member)}
-                          >
-                            Assign
-                          </Button>
-                        </ListItemSecondaryAction>
-                      </ListItem>
+                  <div style={{
+                    maxHeight: '200px',
+                    overflow: 'auto',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                    borderRadius: 'var(--md-sys-shape-corner-medium)'
+                  }}>
+                    {unassignedMembers.map((member, idx) => (
+                      <div key={member.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        borderBottom: idx === unassignedMembers.length - 1 ? 'none' : '1px solid var(--md-sys-color-outline-variant)'
+                      }}>
+                        <div>
+                          <div className="m3-body-large">{member.name}</div>
+                          <div style={{ marginTop: '4px' }}>
+                            <Chip label={member.skill} size="small" variant="outlined" />
+                          </div>
+                        </div>
+                        <Button variant="outlined" onClick={() => handleAssignToTeam(member)}>
+                          Assign
+                        </Button>
+                      </div>
                     ))}
-                  </List>
+                  </div>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
+                  <p className="m3-body-medium text-on-surface-variant">
                     No unassigned members available.
-                  </Typography>
+                  </p>
                 )}
-              </Box>
+              </div>
             )}
-          </Box>
+          </div>
         )}
-      </DialogContent>
+      </div>
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleComplete}
-          variant="contained"
-          disabled={loading || submitting}
-        >
-          Done
-        </Button>
+        <Button variant="text" onClick={onClose} disabled={submitting}>Cancel</Button>
+        <Button onClick={handleComplete} variant="filled" disabled={loading || submitting}>Done</Button>
       </DialogActions>
     </Dialog>
   );

@@ -143,10 +143,10 @@ const Dashboard: React.FC = () => {
         <>
           <div style={{ 
             display: 'flex', 
-            justifyContent: 'space-evenly',
+            justifyContent: 'space-between',
             marginBottom: '4rem'
           }}>
-            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
+            <Card elevation={0} style={{ flex: 1, maxWidth: '260px', backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="assignment" style={{ color: 'var(--md-sys-color-primary)' }} />
@@ -154,13 +154,13 @@ const Dashboard: React.FC = () => {
                     Total Sprints
                   </h2>
                 </div>
-                <div className="m3-display-medium text-primary">
+                <div className="m3-display-medium text-primary" style={{ display: 'flex', justifyContent: 'center' }}>
                   {metrics.totalSprints}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
+            <Card elevation={0} style={{ flex: 1, maxWidth: '260px', backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="group" style={{ color: 'var(--md-sys-color-secondary)' }} />
@@ -168,13 +168,13 @@ const Dashboard: React.FC = () => {
                     Active Members
                   </h2>
                 </div>
-                <div className="m3-display-medium text-secondary">
+                <div className="m3-display-medium text-secondary" style={{ display: 'flex', justifyContent: 'center' }}>
                   {metrics.activeMembers}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
+            <Card elevation={0} style={{ flex: 1, maxWidth: '260px', backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="trending_up" style={{ color: 'var(--md-sys-color-tertiary)' }} />
@@ -182,13 +182,13 @@ const Dashboard: React.FC = () => {
                     Avg Velocity
                   </h2>
                 </div>
-                <div className="m3-display-medium text-tertiary">
+                <div className="m3-display-medium text-tertiary" style={{ display: 'flex', justifyContent: 'center' }}>
                   {metrics.avgVelocity || '-'}
                 </div>
               </CardContent>
             </Card>
             
-            <Card elevation={2} style={{ flex: 1, maxWidth: '250px' }}>
+            <Card elevation={0} style={{ flex: 1, maxWidth: '260px', backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}>
               <CardContent>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                   <Icon name="timer" style={{ color: 'var(--md-sys-color-error)' }} />
@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
                     Current Sprint
                   </h2>
                 </div>
-                <div className="m3-title-large text-error">
+                <div className="m3-title-large text-error" style={{ display: 'flex', justifyContent: 'center' }}>
                   {metrics.currentSprint ? metrics.currentSprint.name : 'None'}
                 </div>
               </CardContent>
