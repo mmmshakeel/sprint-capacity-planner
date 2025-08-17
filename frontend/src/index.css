@@ -1,13 +1,15 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/*
+ * index.css - Global styles that complement MUI's CssBaseline
+ * 
+ * MUI's CssBaseline handles most global styles including:
+ * - Body margin/padding reset
+ * - Font family (uses theme typography)
+ * - Font smoothing
+ * 
+ * Only styles that don't conflict with CssBaseline should be here.
+ */
 
+/* Code blocks - MUI doesn't override this by default */
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Roboto Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
 }

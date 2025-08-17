@@ -192,8 +192,7 @@ const Dashboard: React.FC = () => {
             <Box 
               sx={{ 
                 height: 300, 
-                bgcolor: '#f5f5f5', 
- 
+                bgcolor: 'action.hover', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
