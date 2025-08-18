@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import {
   IconButton,
   Tooltip,
@@ -42,13 +42,13 @@ interface ThemeToggleProps {
  * ThemeToggle component provides an accessible button to switch between light and dark themes.
  * Features smooth transitions, proper ARIA labels, tooltip functionality, and reduced motion support.
  */
-export const ThemeToggle: React.FC<ThemeToggleProps> = ({
+const ThemeToggleComponent: React.FC<ThemeToggleProps> = ({
   size = 'medium',
   className,
   lightModeTooltip = 'Switch to dark mode',
   darkModeTooltip = 'Switch to light mode',
 }) => {
-  const { mode, toggleTheme } = useTheme();
+  const { mode, toggleTheme, isTransitioning } = useTheme();
   const muiTheme = useMuiTheme();
   const { 
     reducedMotion, 
@@ -57,68 +57,98 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     getFocusRingStyle 
   } = useAccessibilityContext();
   
-  const isDarkMode = mode === 'dark';
-  const tooltipText = isDarkMode ? darkModeTooltip : lightModeTooltip;
-  const ariaLabel = isDarkMode ? 'Switch to light mode' : 'Switch to dark mode';
+  // Memoize computed values to prevent unnecessary recalculations
+  const isDarkMode = useMemo(() => mode === 'dark', [mode]);
+  const tooltipText = useMemo(() => 
+    isDarkMode ? darkModeTooltip : lightModeTooltip, 
+    [isDarkMode, darkModeTooltip, lightModeTooltip]
+  );
+  const ariaLabel = useMemo(() => 
+    isDarkMode ? 'Switch to light mode' : 'Switch to dark mode', 
+    [isDarkMode]
+  );
 
-  const handleToggle = () => {
+  // Memoize the toggle handler to prevent unnecessary re-renders
+  const handleToggle = useCallback(() => {
+    // Prevent rapid clicking during transitions
+    if (isTransitioning) {
+      return;
+    }
+
     const announcement = isDarkMode ? 'Switched to light mode' : 'Switched to dark mode';
     
     toggleTheme();
     
     // Announce theme change to screen readers
     announceToScreenReader(announcement, 'polite');
-  };
+  }, [isDarkMode, toggleTheme, announceToScreenReader, isTransitioning]);
+
+  // Memoize transition durations to prevent recalculation
+  const transitionDurations = useMemo(() => ({
+    enter: getTransitionDuration(muiTheme.transitions.duration.enteringScreen),
+    exit: getTransitionDuration(muiTheme.transitions.duration.leavingScreen),
+  }), [getTransitionDuration, muiTheme.transitions.duration]);
+
+  // Memoize button styles to prevent recalculation
+  const buttonStyles = useMemo(() => ({
+    transition: muiTheme.transitions.create(
+      ['transform', 'background-color', 'box-shadow'],
+      {
+        duration: getTransitionDuration(muiTheme.transitions.duration.short),
+        easing: muiTheme.transitions.easing.easeInOut,
+      }
+    ),
+    '&:hover': {
+      transform: reducedMotion ? 'none' : 'scale(1.1)',
+      backgroundColor: muiTheme.palette.action.hover,
+    },
+    '&:active': {
+      transform: reducedMotion ? 'none' : 'scale(0.95)',
+    },
+    '&:focus-visible': getFocusRingStyle(muiTheme),
+    // Add loading state styles
+    '&:disabled': {
+      opacity: 0.6,
+      cursor: 'not-allowed',
+    },
+  }), [muiTheme, getTransitionDuration, reducedMotion, getFocusRingStyle]);
 
   return (
     <Tooltip 
-      title={tooltipText}
+      title={isTransitioning ? 'Switching theme...' : tooltipText}
       placement="bottom"
       arrow
       enterDelay={reducedMotion ? 0 : 500}
       leaveDelay={reducedMotion ? 0 : 200}
     >
-      <IconButton
-        onClick={handleToggle}
-        size={size}
-        className={className}
-        aria-label={ariaLabel}
-        aria-pressed={isDarkMode}
-        aria-describedby="theme-toggle-description"
-        role="switch"
-        sx={{
-          transition: muiTheme.transitions.create(
-            ['transform', 'background-color', 'box-shadow'],
-            {
-              duration: getTransitionDuration(muiTheme.transitions.duration.short),
-              easing: muiTheme.transitions.easing.easeInOut,
-            }
-          ),
-          '&:hover': {
-            transform: reducedMotion ? 'none' : 'scale(1.1)',
-            backgroundColor: muiTheme.palette.action.hover,
-          },
-          '&:active': {
-            transform: reducedMotion ? 'none' : 'scale(0.95)',
-          },
-          '&:focus-visible': getFocusRingStyle(muiTheme),
-        }}
-      >
+      <span>
+        <IconButton
+          onClick={handleToggle}
+          size={size}
+          className={className}
+          aria-label={ariaLabel}
+          aria-pressed={isDarkMode}
+          aria-describedby="theme-toggle-description"
+          role="switch"
+          disabled={isTransitioning}
+          sx={buttonStyles}
+        >
         <Box
           sx={{
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            opacity: isTransitioning ? 0.7 : 1,
+            transition: muiTheme.transitions.create('opacity', {
+              duration: getTransitionDuration(muiTheme.transitions.duration.shortest),
+            }),
           }}
         >
           {/* Light mode icon - shown when in dark mode */}
           <Fade
-            in={isDarkMode}
-            timeout={{
-              enter: getTransitionDuration(muiTheme.transitions.duration.enteringScreen),
-              exit: getTransitionDuration(muiTheme.transitions.duration.leavingScreen),
-            }}
+            in={isDarkMode && !isTransitioning}
+            timeout={transitionDurations}
             unmountOnExit
           >
             <LightModeIcon
@@ -133,11 +163,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           
           {/* Dark mode icon - shown when in light mode */}
           <Fade
-            in={!isDarkMode}
-            timeout={{
-              enter: getTransitionDuration(muiTheme.transitions.duration.enteringScreen),
-              exit: getTransitionDuration(muiTheme.transitions.duration.leavingScreen),
-            }}
+            in={!isDarkMode && !isTransitioning}
+            timeout={transitionDurations}
             unmountOnExit
           >
             <DarkModeIcon
@@ -163,10 +190,15 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           }}
         >
           Toggle between light and dark theme. Current theme: {isDarkMode ? 'dark' : 'light'} mode.
+          {isTransitioning && ' Theme is currently switching.'}
         </Box>
-      </IconButton>
+        </IconButton>
+      </span>
     </Tooltip>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const ThemeToggle = memo(ThemeToggleComponent);
 
 export default ThemeToggle;
