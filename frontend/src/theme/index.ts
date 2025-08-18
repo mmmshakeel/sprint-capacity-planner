@@ -135,6 +135,8 @@ const baseThemeOptions: ThemeOptions = {
     MuiButton: {
       styleOverrides: {
         root: ({ theme }) => ({
+          // Remove custom text transform - use MUI default (none)
+          textTransform: 'none',
           '&:focus-visible': {
             outline: `2px solid ${theme.palette.primary.main}`,
             outlineOffset: '2px',
@@ -234,13 +236,25 @@ export const darkTheme: Theme = createTheme({
   },
 });
 
-// Theme factory function
+// Memoized theme cache to prevent unnecessary theme object creation
+const themeCache = new Map<string, Theme>();
+
+// Theme factory function with memoization
 export const createAppTheme = (mode: 'light' | 'dark'): Theme => {
-  return mode === 'dark' ? darkTheme : lightTheme;
+  // Check cache first
+  const cached = themeCache.get(mode);
+  if (cached) {
+    return cached;
+  }
+
+  // Create and cache the theme
+  const theme = mode === 'dark' ? darkTheme : lightTheme;
+  themeCache.set(mode, theme);
+  return theme;
 };
 
 // Validate theme contrast ratios in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env?.DEV) {
   import('../utils/validateThemeContrast').then(({ logContrastValidation }) => {
     logContrastValidation(lightTheme, 'Light Theme');
     logContrastValidation(darkTheme, 'Dark Theme');

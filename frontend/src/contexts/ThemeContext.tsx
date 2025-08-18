@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { Theme } from '@mui/material/styles';
 import { createAppTheme } from '../theme';
 import { prefersReducedMotion } from '../utils/accessibility';
+import { measureThemeSwitch, reportThemeSwitchComplete } from '../utils/performance';
 
 type ThemeMode = 'light' | 'dark';
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -61,10 +62,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [mode, setMode] = useState<ThemeMode>(() => 
     calculateThemeMode(getStoredThemePreference(), getSystemThemePreference())
   );
-  const [theme, setTheme] = useState<Theme>(() => createAppTheme(mode));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
-  const transitionTimeoutRef = useRef<NodeJS.Timeout>();
+  const transitionTimeoutRef = useRef<number>();
+
+  // Memoize theme creation to prevent unnecessary re-creation
+  const theme = useMemo(() => createAppTheme(mode), [mode]);
 
   // Listen for system theme and motion preference changes
   useEffect(() => {
@@ -97,8 +100,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [userPreference]);
 
-  // Update theme when mode changes with transition management
+  // Track if this is the initial render
+  const isInitialRender = useRef(true);
+
+  // Manage transition state when mode changes
   useEffect(() => {
+    // Don't set transitioning state on initial render
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
     setIsTransitioning(true);
     
     // Clear any existing timeout
@@ -106,12 +118,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       clearTimeout(transitionTimeoutRef.current);
     }
     
-    // Update theme immediately
-    setTheme(createAppTheme(mode));
-    
     // End transition after a brief delay (or immediately if reduced motion)
     const transitionDuration = reducedMotion ? 0 : 150;
-    transitionTimeoutRef.current = setTimeout(() => {
+    transitionTimeoutRef.current = window.setTimeout(() => {
       setIsTransitioning(false);
     }, transitionDuration);
     
@@ -128,7 +137,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setMode(newMode);
   }, [userPreference, systemPreference]);
 
-  const setThemePreference = (preference: ThemePreference) => {
+  // Memoize setThemePreference to prevent unnecessary re-renders
+  const setThemePreference = useCallback((preference: ThemePreference) => {
     setUserPreferenceState(preference);
     
     // Persist to localStorage
@@ -137,14 +147,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     } catch (error) {
       console.warn('Failed to save theme preference to localStorage:', error);
     }
-  };
+  }, []);
 
-  const toggleTheme = () => {
+  // Memoize toggleTheme to prevent unnecessary re-renders
+  const toggleTheme = useCallback(() => {
+    // Start performance measurement
+    const newPreference = mode === 'light' ? 'dark' : 'light';
+    const performanceId = measureThemeSwitch(newPreference);
+    
     // Preserve focus during theme transition
     const activeElement = document.activeElement as HTMLElement;
     
     // Toggle between light and dark, ignoring system preference
-    const newPreference = mode === 'light' ? 'dark' : 'light';
     setThemePreference(newPreference);
     
     // Restore focus after theme change if element still exists and is focusable
@@ -159,11 +173,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
           // Silently handle focus restoration errors
           console.debug('Could not restore focus after theme change:', error);
         }
+        
+        // Report performance after DOM updates
+        setTimeout(() => {
+          reportThemeSwitchComplete(performanceId);
+        }, 0);
       });
+    } else {
+      // Report performance immediately if no focus restoration needed
+      setTimeout(() => {
+        reportThemeSwitchComplete(performanceId);
+      }, 0);
     }
-  };
+  }, [mode, setThemePreference]);
 
-  const contextValue: ThemeContextType = {
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const contextValue: ThemeContextType = useMemo(() => ({
     mode,
     theme,
     userPreference,
@@ -171,7 +196,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setThemePreference,
     isTransitioning,
     reducedMotion,
-  };
+  }), [mode, theme, userPreference, toggleTheme, setThemePreference, isTransitioning, reducedMotion]);
 
   return (
     <ThemeContext.Provider value={contextValue}>
