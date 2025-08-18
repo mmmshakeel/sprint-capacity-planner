@@ -186,9 +186,13 @@ const baseThemeOptions: ThemeOptions = {
       styleOverrides: {
         root: ({ theme }) => ({
           '& .MuiOutlinedInput-root': {
-            '&:focus-within': {
-              outline: `2px solid ${theme.palette.primary.main}`,
-              outlineOffset: '2px',
+            // Remove conflicting outline - MUI handles focus styles internally
+            '&.Mui-focused': {
+              // Ensure proper focus border color
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: theme.palette.primary.main,
+                borderWidth: '2px',
+              },
             },
           },
         }),
