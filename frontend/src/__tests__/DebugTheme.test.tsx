@@ -50,7 +50,7 @@ describe('Debug Theme Toggle', () => {
     
     console.log('Initial mode:', modeDisplay.textContent);
     console.log('Initial transitioning:', transitionDisplay.textContent);
-    console.log('Button disabled:', toggleButton.disabled);
+    console.log('Button disabled:', (toggleButton as HTMLButtonElement).disabled);
     
     const initialMode = modeDisplay.textContent;
     
@@ -59,14 +59,14 @@ describe('Debug Theme Toggle', () => {
     
     console.log('After click mode:', modeDisplay.textContent);
     console.log('After click transitioning:', transitionDisplay.textContent);
-    console.log('After click button disabled:', toggleButton.disabled);
+    console.log('After click button disabled:', (toggleButton as HTMLButtonElement).disabled);
     
     // Wait a bit
     await new Promise(resolve => setTimeout(resolve, 200));
     
     console.log('After wait mode:', modeDisplay.textContent);
     console.log('After wait transitioning:', transitionDisplay.textContent);
-    console.log('After wait button disabled:', toggleButton.disabled);
+    console.log('After wait button disabled:', (toggleButton as HTMLButtonElement).disabled);
     
     const finalMode = modeDisplay.textContent;
     expect(finalMode).not.toBe(initialMode);

@@ -7,6 +7,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { AccessibilityProvider } from '../contexts/AccessibilityContext';
