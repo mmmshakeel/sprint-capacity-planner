@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
                     Current Sprint
                   </Typography>
                 </Box>
-                <Typography variant="h6" color="warning">
+                <Typography variant="h4" color="warning">
                   {metrics.currentSprint ? metrics.currentSprint.name : 'None'}
                 </Typography>
               </CardContent>
@@ -181,14 +181,14 @@ const Dashboard: React.FC = () => {
           </Grid>
           
         {/* Charts Section */}
-          <Grid item xs={12}>
+        <Grid item xs={12}>
           <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6" gutterBottom>
               Sprint Velocity Chart
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Charts and visualizations will be implemented here
-                            </Typography>
+            </Typography>
             <Box 
               sx={{ 
                 height: 300, 
@@ -201,11 +201,11 @@ const Dashboard: React.FC = () => {
             >
               <Typography variant="h6" color="text.secondary">
                 Chart Placeholder
-                              </Typography>
-                            </Box>
-            </Paper>
-          </Grid>
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
+      </Grid>
       )}
     </Box>
   );

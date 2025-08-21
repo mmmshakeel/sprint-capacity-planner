@@ -113,7 +113,7 @@ export class SprintService {
 
     const lastSprints = await this.sprintRepository.find({
       where: whereCondition,
-      order: { id: 'DESC' },
+      order: { startDate: 'DESC' },
       take: 6,
     });
 
