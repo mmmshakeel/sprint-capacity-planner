@@ -1,20 +1,8 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SprintVelocityChart from '../SprintVelocityChart';
 import { sprintApi } from '../../services/api';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
 
 // Mock the API
 vi.mock('../../services/api', () => ({
@@ -42,10 +30,10 @@ describe('SprintVelocityChart', () => {
   });
 
   it('should render loading state initially', () => {
-    mockSprintApi.getAllSprints.mockImplementation(() => new Promise(() => {})); // Never resolves
-    
+    mockSprintApi.getAllSprints.mockImplementation(() => new Promise(() => { })); // Never resolves
+
     render(<SprintVelocityChart teamId={1} />);
-    
+
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
@@ -68,19 +56,19 @@ describe('SprintVelocityChart', () => {
   it('should render chart when data is available', async () => {
     mockSprintApi.getAllSprints.mockResolvedValue({
       sprints: [
-        { 
-          id: 1, 
-          name: 'Sprint 1', 
-          startDate: '2024-01-01', 
-          completedVelocity: 15, 
-          projectedVelocity: 10 
+        {
+          id: 1,
+          name: 'Sprint 1',
+          startDate: '2024-01-01',
+          completedVelocity: 15,
+          projectedVelocity: 10
         },
-        { 
-          id: 2, 
-          name: 'Sprint 2', 
-          startDate: '2024-01-15', 
-          completedVelocity: 12, 
-          projectedVelocity: 15 
+        {
+          id: 2,
+          name: 'Sprint 2',
+          startDate: '2024-01-15',
+          completedVelocity: 12,
+          projectedVelocity: 15
         },
       ],
     });
@@ -113,10 +101,10 @@ describe('SprintVelocityChart', () => {
   });
 
   it('should render loading state with message', () => {
-    mockSprintApi.getAllSprints.mockImplementation(() => new Promise(() => {})); // Never resolves
-    
+    mockSprintApi.getAllSprints.mockImplementation(() => new Promise(() => { })); // Never resolves
+
     render(<SprintVelocityChart teamId={1} />);
-    
+
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('Loading sprint velocity data...')).toBeInTheDocument();
   });
@@ -152,26 +140,26 @@ describe('SprintVelocityChart', () => {
   it('should filter and sort sprint data correctly', async () => {
     mockSprintApi.getAllSprints.mockResolvedValue({
       sprints: [
-        { 
-          id: 3, 
-          name: 'Sprint 3', 
-          startDate: '2024-02-01', 
+        {
+          id: 3,
+          name: 'Sprint 3',
+          startDate: '2024-02-01',
           completedVelocity: 0, // Should be filtered out
-          projectedVelocity: 10 
+          projectedVelocity: 10
         },
-        { 
-          id: 1, 
-          name: 'Sprint 1', 
-          startDate: '2024-01-01', 
-          completedVelocity: 15, 
-          projectedVelocity: 10 
+        {
+          id: 1,
+          name: 'Sprint 1',
+          startDate: '2024-01-01',
+          completedVelocity: 15,
+          projectedVelocity: 10
         },
-        { 
-          id: 2, 
-          name: 'Sprint 2', 
-          startDate: '2024-01-15', 
-          completedVelocity: 12, 
-          projectedVelocity: 15 
+        {
+          id: 2,
+          name: 'Sprint 2',
+          startDate: '2024-01-15',
+          completedVelocity: 12,
+          projectedVelocity: 15
         },
       ],
     });

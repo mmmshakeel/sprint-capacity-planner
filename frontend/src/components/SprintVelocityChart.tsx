@@ -227,13 +227,12 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
             vertical: true,
             horizontal: true,
           }}
-          margin={{ left: 80, right: 80, top: 60, bottom: 80 }}
+          margin={{ left: 40, right: 40, top: 80, bottom: 80 }}
           slotProps={{
             legend: {
               position: { vertical: 'top', horizontal: 'center' },
             },
           }}
-          disableAxisListener
           sx={{
             // Axis styling
             '& .MuiChartsAxis-label': {
@@ -286,20 +285,6 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
             // Remove axis highlight lines
             '& .MuiChartsAxisHighlight-root': {
               display: 'none',
-            },
-            // Point styling with accessibility
-            '& .MuiMarkElement-root': {
-              r: 4,
-              strokeWidth: 2,
-              stroke: theme.palette.background.paper,
-              '&:hover': {
-                r: 6,
-                strokeWidth: 3,
-              },
-              '&:focus-visible': {
-                outline: `2px solid ${theme.palette.primary.main}`,
-                outlineOffset: '2px',
-              },
             },
             // Tooltip styling
             '& .MuiChartsTooltip-root': {
