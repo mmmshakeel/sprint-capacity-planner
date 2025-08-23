@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTeam } from '../contexts/TeamContext';
 import { sprintApi, teamMemberApi } from '../services/api';
 import { Sprint } from '../types';
+import SprintVelocityChart from './SprintVelocityChart';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -182,27 +183,8 @@ const Dashboard: React.FC = () => {
           
         {/* Charts Section */}
         <Grid item xs={12}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" gutterBottom>
-              Sprint Velocity Chart
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Charts and visualizations will be implemented here
-            </Typography>
-            <Box 
-              sx={{ 
-                height: 300, 
-                bgcolor: 'action.hover', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                mt: 2
-              }}
-            >
-              <Typography variant="h6" color="text.secondary">
-                Chart Placeholder
-              </Typography>
-            </Box>
+          <Paper elevation={2} sx={{ p: 3 }}>
+            <SprintVelocityChart teamId={selectedTeam.id} />
           </Paper>
         </Grid>
       </Grid>
