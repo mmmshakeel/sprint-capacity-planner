@@ -38,3 +38,5 @@ mysql_data/
 # Claude AI
 .claude/
 CLAUDE.md
+
+.kiro/
