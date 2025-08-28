@@ -3,13 +3,10 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Sprint } from './entities/sprint.entity';
-import { TeamMember } from './entities/team-member.entity';
-import { TeamMemberSprintCapacity } from './entities/team-member-sprint-capacity.entity';
-import { Team } from './entities/team.entity';
 import { SprintModule } from './sprint/sprint.module';
 import { TeamMemberModule } from './team-member/team-member.module';
 import { TeamModule } from './team/team.module';
+import { DataSeedingModule } from './services/data-seeding.module';
 import { createDatabaseConfig } from './config/database.config';
 
 @Module({
@@ -27,6 +24,7 @@ import { createDatabaseConfig } from './config/database.config';
         }
       },
     }),
+    DataSeedingModule,
     SprintModule,
     TeamMemberModule,
     TeamModule,

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DataSeedingService } from './services/data-seeding.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,6 +29,13 @@ async function bootstrap() {
   
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  // Run database seeding for SQLite databases
+  const databaseType = process.env.DATABASE_TYPE || 'mysql';
+  if (databaseType === 'sqlite') {
+    const seedingService = app.get(DataSeedingService);
+    await seedingService.seedDatabase();
+  }
 
   await app.listen(process.env.PORT || 3300);
 }

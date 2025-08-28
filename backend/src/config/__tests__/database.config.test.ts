@@ -3,11 +3,11 @@ import {
   createMySqlConfig,
   createSqliteConfig,
   validateDatabaseConfig,
+  validateDatabaseType,
   MySqlConfig,
   SqliteConfig,
 } from '../database.config';
 import * as fs from 'fs';
-import * as path from 'path';
 
 // Mock fs module
 jest.mock('fs');
@@ -76,7 +76,23 @@ describe('Database Configuration', () => {
       delete process.env.DATABASE_PASSWORD;
 
       expect(() => createMySqlConfig()).toThrow(
-        'Missing required MySQL environment variables: DATABASE_USER, DATABASE_PASSWORD'
+        'MySQL configuration validation failed'
+      );
+    });
+
+    it('should throw error with invalid port number', () => {
+      process.env.DATABASE_PORT = 'invalid';
+
+      expect(() => createMySqlConfig()).toThrow(
+        'DATABASE_PORT must be a valid port number'
+      );
+    });
+
+    it('should throw error with invalid database name format', () => {
+      process.env.DATABASE_NAME = 'test-db!';
+
+      expect(() => createMySqlConfig()).toThrow(
+        'DATABASE_NAME can only contain letters, numbers, and underscores'
       );
     });
   });
@@ -136,6 +152,48 @@ describe('Database Configuration', () => {
 
       expect(config.logging).toEqual(['query', 'error', 'warn']);
     });
+
+    it('should throw error with invalid database path', () => {
+      process.env.DATABASE_PATH = '../../../etc/passwd';
+
+      expect(() => createSqliteConfig()).toThrow(
+        'DATABASE_PATH cannot contain relative path traversal'
+      );
+    });
+
+    it('should throw error with empty database path', () => {
+      process.env.DATABASE_PATH = '';
+
+      expect(() => createSqliteConfig()).toThrow(
+        'DATABASE_PATH cannot be empty'
+      );
+    });
+  });
+
+  describe('validateDatabaseType', () => {
+    it('should return mysql for valid mysql type', () => {
+      expect(validateDatabaseType('mysql')).toBe('mysql');
+      expect(validateDatabaseType('MYSQL')).toBe('mysql');
+      expect(validateDatabaseType(' mysql ')).toBe('mysql');
+    });
+
+    it('should return sqlite for valid sqlite type', () => {
+      expect(validateDatabaseType('sqlite')).toBe('sqlite');
+      expect(validateDatabaseType('SQLITE')).toBe('sqlite');
+      expect(validateDatabaseType(' sqlite ')).toBe('sqlite');
+    });
+
+    it('should default to mysql for undefined type', () => {
+      expect(validateDatabaseType(undefined)).toBe('mysql');
+      expect(validateDatabaseType('')).toBe('mysql');
+      expect(validateDatabaseType('  ')).toBe('mysql');
+    });
+
+    it('should throw error for unsupported database type', () => {
+      expect(() => validateDatabaseType('postgresql')).toThrow(
+        'Unsupported database type: "postgresql"'
+      );
+    });
   });
 
   describe('validateDatabaseConfig', () => {
@@ -154,7 +212,13 @@ describe('Database Configuration', () => {
 
     it('should throw error for unsupported database type', () => {
       expect(() => validateDatabaseConfig('postgresql')).toThrow(
-        'Unsupported database type: postgresql'
+        'Unsupported database type: "postgresql"'
+      );
+    });
+
+    it('should provide context in error messages', () => {
+      expect(() => validateDatabaseConfig('mysql')).toThrow(
+        'Database configuration validation failed for mysql'
       );
     });
   });
@@ -186,6 +250,27 @@ describe('Database Configuration', () => {
       expect(() => createDatabaseConfig()).toThrow(
         'Database configuration failed:'
       );
+    });
+
+    it('should include environment context in error messages', () => {
+      process.env.DATABASE_TYPE = 'mysql';
+      process.env.NODE_ENV = 'development';
+
+      try {
+        createDatabaseConfig();
+      } catch (error) {
+        expect(error.message).toContain('Current environment:');
+        expect(error.message).toContain('DATABASE_TYPE: mysql');
+        expect(error.message).toContain('NODE_ENV: development');
+      }
+    });
+
+    it('should handle case-insensitive database types', () => {
+      process.env.DATABASE_TYPE = 'SQLITE';
+
+      const config = createDatabaseConfig();
+
+      expect(config.type).toBe('sqlite');
     });
   });
 });
