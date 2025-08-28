@@ -10,25 +10,22 @@ import { Team } from './entities/team.entity';
 import { SprintModule } from './sprint/sprint.module';
 import { TeamMemberModule } from './team-member/team-member.module';
 import { TeamModule } from './team/team.module';
+import { createDatabaseConfig } from './config/database.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DATABASE_HOST || 'localhost',
-      port: parseInt(process.env.DATABASE_PORT) || 3306,
-      username: process.env.DATABASE_USER || 'dbuser',
-      password: process.env.DATABASE_PASSWORD || 'dbpassword',
-      database: process.env.DATABASE_NAME || 'mydb',
-      entities: [Sprint, TeamMember, TeamMemberSprintCapacity, Team],
-      synchronize: process.env.NODE_ENV !== 'production',
-      logging: ['error', 'warn'],
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      retryAttempts: 3,
-      retryDelay: 1000,
+    TypeOrmModule.forRootAsync({
+      useFactory: () => {
+        try {
+          return createDatabaseConfig();
+        } catch (error) {
+          console.error('Failed to create database configuration:', error.message);
+          throw error;
+        }
+      },
     }),
     SprintModule,
     TeamMemberModule,
