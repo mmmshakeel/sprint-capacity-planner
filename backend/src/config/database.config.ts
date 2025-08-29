@@ -3,6 +3,8 @@ import { Sprint } from '../entities/sprint.entity';
 import { TeamMember } from '../entities/team-member.entity';
 import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacity.entity';
 import { Team } from '../entities/team.entity';
+import { DatabaseLoggerService } from './database-logger.service';
+import { DatabaseErrorHandlerService } from './database-error-handler.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -229,22 +231,41 @@ export function validateDatabaseConfig(type: string): void {
  * Factory function to create database configuration based on environment variables
  */
 export function createDatabaseConfig(): TypeOrmModuleOptions {
+  const logger = new DatabaseLoggerService();
+  const errorHandler = new DatabaseErrorHandlerService();
   const rawDbType = process.env.DATABASE_TYPE;
+  
+  // Log environment debug information
+  logger.logEnvironmentDebugInfo();
   
   try {
     // Validate and normalize database type
     const dbType = validateDatabaseType(rawDbType);
+    logger.logInitializationStep(`Database type validated: ${dbType}`);
     
     // Validate configuration for the specific database type
     validateDatabaseConfig(dbType);
+    logger.logInitializationStep(`Configuration validation completed for ${dbType}`);
     
     // Create configuration based on validated type
+    let config: TypeOrmModuleOptions;
     if (dbType === 'sqlite') {
-      return createSqliteConfig();
+      config = createSqliteConfig();
+    } else {
+      config = createMySqlConfig();
     }
     
-    return createMySqlConfig();
+    // Log the selected configuration
+    logger.logDatabaseSelection(dbType, config);
+    
+    return config;
   } catch (error) {
+    // Handle configuration errors with detailed logging
+    const dbType = rawDbType ? validateDatabaseType(rawDbType) : 'mysql';
+    const dbError = errorHandler.handleDatabaseError(error, dbType);
+    
+    logger.logConfigurationError(dbType, dbError.userMessage);
+    
     // Provide helpful context in error messages
     const contextInfo = [
       `DATABASE_TYPE: ${rawDbType || 'not set (defaults to mysql)'}`,
@@ -258,10 +279,18 @@ export function createDatabaseConfig(): TypeOrmModuleOptions {
       contextInfo.push(`DATABASE_NAME: ${process.env.DATABASE_NAME || 'not set'}`);
     }
     
-    throw new Error(
-      `Database configuration failed: ${error.message}\n\n` +
+    const enhancedError = new Error(
+      `Database configuration failed: ${dbError.userMessage}\n\n` +
+      `Technical Details: ${dbError.technicalMessage}\n\n` +
       `Current environment:\n  - ${contextInfo.join('\n  - ')}\n\n` +
+      `Troubleshooting Steps:\n${dbError.troubleshootingSteps.map((step, i) => `  ${i + 1}. ${step}`).join('\n')}\n\n` +
       'Please check your environment variables and refer to the documentation for proper configuration.'
     );
+    
+    // Preserve original error for debugging
+    (enhancedError as any).originalError = error;
+    (enhancedError as any).databaseError = dbError;
+    
+    throw enhancedError;
   }
 }
