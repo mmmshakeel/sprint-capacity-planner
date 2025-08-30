@@ -26,6 +26,9 @@ export class Sprint {
   completedVelocity: number;
 
   @Column({ type: 'int', nullable: true })
+  velocityCommitment?: number;
+
+  @Column({ type: 'int', nullable: true })
   teamId: number;
 
   @ManyToOne(() => Team, (team) => team.sprints)

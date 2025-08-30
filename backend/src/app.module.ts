@@ -21,26 +21,26 @@ import { DatabaseErrorHandlerService } from './config/database-error-handler.ser
         const logger = new DatabaseLoggerService();
         const errorHandler = new DatabaseErrorHandlerService();
         const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite';
-        
+
         try {
           logger.logConnectionAttempt(dbType);
           const startTime = Date.now();
-          
+
           const config = createDatabaseConfig();
-          
+
           const duration = Date.now() - startTime;
           logger.logPerformanceMetric('Database configuration creation', duration);
-          
+
           return config;
         } catch (error) {
           const dbError = errorHandler.handleDatabaseError(error, dbType);
           logger.logConnectionError(dbType, error);
-          
+
           // Create a more user-friendly error message
           const userFriendlyError = new Error(errorHandler.formatUserErrorMessage(dbError));
           (userFriendlyError as any).originalError = error;
           (userFriendlyError as any).databaseError = dbError;
-          
+
           throw userFriendlyError;
         }
       },
@@ -49,32 +49,23 @@ import { DatabaseErrorHandlerService } from './config/database-error-handler.ser
         const { DataSource } = await import('typeorm');
         const logger = new DatabaseLoggerService();
         const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite';
-        
+
         const dataSource = new DataSource(options);
-        
-        // Add event listeners for connection lifecycle
-        dataSource.manager.connection.driver.master?.on?.('connect', () => {
-          logger.logConnectionSuccess(dbType);
-        });
-        
-        dataSource.manager.connection.driver.master?.on?.('error', (error: any) => {
-          logger.logConnectionError(dbType, error);
-        });
-        
+
         try {
           const startTime = Date.now();
           await dataSource.initialize();
           const duration = Date.now() - startTime;
-          
+
           logger.logConnectionSuccess(dbType);
           logger.logPerformanceMetric('Database connection initialization', duration);
-          
+
           return dataSource;
         } catch (error) {
           const errorHandler = new DatabaseErrorHandlerService();
           const dbError = errorHandler.handleDatabaseError(error, dbType);
           logger.logConnectionError(dbType, error);
-          
+
           throw error;
         }
       },
@@ -87,4 +78,4 @@ import { DatabaseErrorHandlerService } from './config/database-error-handler.ser
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
