@@ -15,7 +15,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "check-config": "node scripts/check-config.js"
   },
   "keywords": [],
   "author": "",
@@ -35,11 +36,13 @@
     "mysql2": "^3.14.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sqlite3": "^5.1.7",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.25"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.7",
+    "@nestjs/testing": "^10.4.20",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
     "@vercel/node": "^3.2.29",
