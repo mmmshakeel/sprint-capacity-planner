@@ -5,19 +5,28 @@ import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacit
 import { TeamMember } from '../entities/team-member.entity';
 
 // Test data factories
-const createTestSprint = (overrides: Partial<Sprint> = {}): Sprint => ({
-  id: 1,
-  name: 'Test Sprint',
-  startDate: new Date('2024-01-01'),
-  endDate: new Date('2024-01-14'),
-  capacity: 40,
-  projectedVelocity: 0,
-  completedVelocity: 32,
-  teamId: 1,
-  team: null,
-  teamMemberCapacities: [],
-  ...overrides
-});
+const createTestSprint = (overrides: Partial<Sprint> = {}): Sprint => {
+  // Default to future dates to make sprints active by default
+  const futureStartDate = new Date();
+  futureStartDate.setDate(futureStartDate.getDate() + 1);
+  const futureEndDate = new Date();
+  futureEndDate.setDate(futureEndDate.getDate() + 14);
+
+  return {
+    id: 1,
+    name: 'Test Sprint',
+    startDate: futureStartDate,
+    endDate: futureEndDate,
+    capacity: 40,
+    projectedVelocity: 0,
+    completedVelocity: 32,
+    velocityCommitment: undefined,
+    teamId: 1,
+    team: null,
+    teamMemberCapacities: [],
+    ...overrides
+  };
+};
 
 const createTestTeamMemberCapacity = (overrides: Partial<TeamMemberSprintCapacity> = {}): TeamMemberSprintCapacity => ({
   id: 1,
@@ -593,6 +602,674 @@ describe('SprintService', () => {
       const result = service.calculateWorkingDays(startDate, endDate);
 
       expect(result).toBe(2); // Friday + Monday (skip weekend)
+    });
+  });
+
+  describe('Sprint Completion Status Logic', () => {
+    describe('isSprintCompleted', () => {
+      it('should return true when current date is after sprint end date AND has completed velocity', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return false when current date is after sprint end date but has no completed velocity', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: null
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should return false when has completed velocity but current date is before sprint end date', () => {
+        // Arrange
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const sprint = createTestSprint({
+          endDate: tomorrow,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should return false when current date is before sprint end date and no completed velocity', () => {
+        // Arrange
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const sprint = createTestSprint({
+          endDate: tomorrow,
+          completedVelocity: null
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should return false when current date is the same as sprint end date even with completed velocity', () => {
+        // Arrange
+        const today = new Date();
+        
+        const sprint = createTestSprint({
+          endDate: today,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should handle sprint end date at end of day correctly', () => {
+        // Arrange
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+        
+        const sprint = createTestSprint({
+          endDate: today,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        // Should return false because sprint is active until end of its end date
+        expect(result).toBe(false);
+      });
+
+      it('should return true for sprint that ended yesterday with completed velocity', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0); // Start of yesterday
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return true when completed velocity is 0 (valid completed sprint)', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: 0 // 0 is a valid completed velocity (team completed 0 story points)
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return false when completed velocity is undefined', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: undefined
+        });
+
+        // Act
+        const result = service.isSprintCompleted(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('canEditSprint', () => {
+      it('should return true for active sprint without completed velocity', () => {
+        // Arrange
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const sprint = createTestSprint({
+          endDate: tomorrow,
+          completedVelocity: null
+        });
+
+        // Act
+        const result = service.canEditSprint(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return true for sprint past end date but without completed velocity', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: null
+        });
+
+        // Act
+        const result = service.canEditSprint(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return false for completed sprint (past end date with completed velocity)', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.canEditSprint(sprint);
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should return true for sprint ending today even with completed velocity', () => {
+        // Arrange
+        const today = new Date();
+        
+        const sprint = createTestSprint({
+          endDate: today,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.canEditSprint(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return true for active sprint with completed velocity', () => {
+        // Arrange
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const sprint = createTestSprint({
+          endDate: tomorrow,
+          completedVelocity: 35
+        });
+
+        // Act
+        const result = service.canEditSprint(sprint);
+
+        // Assert
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('validateSprintCanBeEdited', () => {
+      it('should not throw error for active sprint without completed velocity', () => {
+        // Arrange
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const sprint = createTestSprint({
+          endDate: tomorrow,
+          completedVelocity: null
+        });
+
+        // Act & Assert
+        expect(() => service.validateSprintCanBeEdited(sprint)).not.toThrow();
+      });
+
+      it('should not throw error for sprint past end date but without completed velocity', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: null
+        });
+
+        // Act & Assert
+        expect(() => service.validateSprintCanBeEdited(sprint)).not.toThrow();
+      });
+
+      it('should throw error for completed sprint (past end date with completed velocity)', () => {
+        // Arrange
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sprint = createTestSprint({
+          endDate: yesterday,
+          completedVelocity: 35
+        });
+
+        // Act & Assert
+        expect(() => service.validateSprintCanBeEdited(sprint)).toThrow(
+          'Cannot edit completed sprint. Projected velocity and velocity commitment cannot be modified after sprint completion.'
+        );
+      });
+
+      it('should not throw error for sprint ending today even with completed velocity', () => {
+        // Arrange
+        const today = new Date();
+        
+        const sprint = createTestSprint({
+          endDate: today,
+          completedVelocity: 35
+        });
+
+        // Act & Assert
+        expect(() => service.validateSprintCanBeEdited(sprint)).not.toThrow();
+      });
+    });
+  });
+
+  describe('Velocity Commitment Handling', () => {
+    describe('create', () => {
+      it('should create sprint with velocity commitment', async () => {
+        // Arrange
+        const createSprintDto = {
+          name: 'Test Sprint',
+          startDate: '2024-01-01',
+          endDate: '2024-01-14',
+          completedVelocity: 0,
+          velocityCommitment: 40,
+          teamId: 1
+        };
+
+        const expectedSprint = createTestSprint({
+          velocityCommitment: 40
+        });
+
+        sprintRepository.create.mockReturnValue(expectedSprint);
+        sprintRepository.save.mockResolvedValue(expectedSprint);
+        sprintRepository.findOne.mockResolvedValue(expectedSprint);
+
+        // Act
+        const result = await service.create(createSprintDto);
+
+        // Assert
+        expect(sprintRepository.create).toHaveBeenCalledWith({
+          name: 'Test Sprint',
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-01-14'),
+          completedVelocity: 0,
+          velocityCommitment: 40,
+          teamId: 1
+        });
+        expect(result.velocityCommitment).toBe(40);
+      });
+
+      it('should create sprint without velocity commitment when not provided', async () => {
+        // Arrange
+        const createSprintDto = {
+          name: 'Test Sprint',
+          startDate: '2024-01-01',
+          endDate: '2024-01-14',
+          teamId: 1
+        };
+
+        const expectedSprint = createTestSprint();
+
+        sprintRepository.create.mockReturnValue(expectedSprint);
+        sprintRepository.save.mockResolvedValue(expectedSprint);
+        sprintRepository.findOne.mockResolvedValue(expectedSprint);
+
+        // Act
+        const result = await service.create(createSprintDto);
+
+        // Assert
+        expect(sprintRepository.create).toHaveBeenCalledWith({
+          name: 'Test Sprint',
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-01-14'),
+          completedVelocity: 0,
+          velocityCommitment: undefined,
+          teamId: 1
+        });
+      });
+    });
+
+    describe('update', () => {
+      it('should update sprint with velocity commitment for active sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const existingSprint = createTestSprint({
+          id: sprintId,
+          endDate: tomorrow, // Active sprint
+          velocityCommitment: 35
+        });
+
+        const updateSprintDto = {
+          velocityCommitment: 45
+        };
+
+        sprintRepository.findOne.mockResolvedValue(existingSprint);
+        sprintRepository.save.mockResolvedValue({
+          ...existingSprint,
+          velocityCommitment: 45
+        });
+
+        // Act
+        const result = await service.update(sprintId, updateSprintDto);
+
+        // Assert
+        expect(sprintRepository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            velocityCommitment: 45
+          })
+        );
+      });
+
+      it('should throw error when trying to update velocity commitment in completed sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const completedSprint = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: 32, // Has completed velocity - truly completed
+          velocityCommitment: 35
+        });
+
+        const updateSprintDto = {
+          velocityCommitment: 45
+        };
+
+        sprintRepository.findOne.mockResolvedValue(completedSprint);
+
+        // Act & Assert
+        await expect(service.update(sprintId, updateSprintDto)).rejects.toThrow(
+          'Cannot edit completed sprint. Projected velocity and velocity commitment cannot be modified after sprint completion.'
+        );
+      });
+
+      it('should throw error when trying to update completed velocity in completed sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const completedSprint = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: 32 // Has completed velocity - truly completed
+        });
+
+        const updateSprintDto = {
+          completedVelocity: 40
+        };
+
+        sprintRepository.findOne.mockResolvedValue(completedSprint);
+
+        // Act & Assert
+        await expect(service.update(sprintId, updateSprintDto)).rejects.toThrow(
+          'Cannot edit completed sprint. Projected velocity and velocity commitment cannot be modified after sprint completion.'
+        );
+      });
+
+      it('should allow updating other fields in completed sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const completedSprint = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: 32, // Has completed velocity - truly completed
+          name: 'Old Sprint Name'
+        });
+
+        const updateSprintDto = {
+          name: 'New Sprint Name'
+        };
+
+        sprintRepository.findOne.mockResolvedValue(completedSprint);
+        sprintRepository.save.mockResolvedValue({
+          ...completedSprint,
+          name: 'New Sprint Name'
+        });
+
+        // Act
+        const result = await service.update(sprintId, updateSprintDto);
+
+        // Assert
+        expect(sprintRepository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'New Sprint Name'
+          })
+        );
+      });
+
+      it('should allow updating velocity commitment in sprint past end date but without completed velocity', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const sprintPastEndDate = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: null, // No completed velocity - not truly completed
+          velocityCommitment: 35
+        });
+
+        const updateSprintDto = {
+          velocityCommitment: 45
+        };
+
+        sprintRepository.findOne.mockResolvedValue(sprintPastEndDate);
+        sprintRepository.save.mockResolvedValue({
+          ...sprintPastEndDate,
+          velocityCommitment: 45
+        });
+
+        // Act
+        const result = await service.update(sprintId, updateSprintDto);
+
+        // Assert
+        expect(sprintRepository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            velocityCommitment: 45
+          })
+        );
+      });
+
+      it('should allow updating velocity commitment to null (removing it)', async () => {
+        // Arrange
+        const sprintId = 1;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const existingSprint = createTestSprint({
+          id: sprintId,
+          endDate: tomorrow, // Active sprint
+          velocityCommitment: 35
+        });
+
+        const updateSprintDto = {
+          velocityCommitment: null as any // Explicitly set to null to remove
+        };
+
+        sprintRepository.findOne.mockResolvedValue(existingSprint);
+        sprintRepository.save.mockResolvedValue({
+          ...existingSprint,
+          velocityCommitment: null
+        });
+
+        // Act
+        const result = await service.update(sprintId, updateSprintDto);
+
+        // Assert
+        // Verify that the sprint object passed to save has velocityCommitment set to null
+        const savedSprint = sprintRepository.save.mock.calls[0][0];
+        expect(savedSprint.velocityCommitment).toBeNull();
+      });
+
+      it('should not update velocity commitment when undefined is passed (field omitted)', async () => {
+        // Arrange
+        const sprintId = 1;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const existingSprint = createTestSprint({
+          id: sprintId,
+          endDate: tomorrow, // Active sprint
+          velocityCommitment: 35
+        });
+
+        const updateSprintDto = {
+          name: 'Updated Sprint Name'
+          // velocityCommitment is not included, so it should remain unchanged
+        };
+
+        sprintRepository.findOne.mockResolvedValue(existingSprint);
+        sprintRepository.save.mockResolvedValue({
+          ...existingSprint,
+          name: 'Updated Sprint Name'
+        });
+
+        // Act
+        const result = await service.update(sprintId, updateSprintDto);
+
+        // Assert
+        // Verify that the sprint object passed to save still has the original velocityCommitment
+        const savedSprint = sprintRepository.save.mock.calls[0][0];
+        expect(savedSprint.velocityCommitment).toBe(35);
+        expect(savedSprint.name).toBe('Updated Sprint Name');
+      });
+    });
+
+    describe('calculateProjectedVelocity', () => {
+      it('should throw error when trying to calculate projected velocity for completed sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const completedSprint = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: 32, // Has completed velocity - truly completed
+          teamMemberCapacities: [createTestTeamMemberCapacity({ capacity: 40 })]
+        });
+
+        sprintRepository.findOne.mockResolvedValue(completedSprint);
+
+        // Act & Assert
+        await expect(service.calculateProjectedVelocity(sprintId)).rejects.toThrow(
+          'Cannot edit completed sprint. Projected velocity and velocity commitment cannot be modified after sprint completion.'
+        );
+      });
+
+      it('should allow calculating projected velocity for sprint past end date but without completed velocity', async () => {
+        // Arrange
+        const sprintId = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const sprintPastEndDate = createTestSprint({
+          id: sprintId,
+          endDate: yesterday, // Past end date
+          completedVelocity: null, // No completed velocity - not truly completed
+          teamId: 1,
+          teamMemberCapacities: [createTestTeamMemberCapacity({ capacity: 40 })]
+        });
+
+        const historicalSprints = [
+          createTestSprint({ id: 2, completedVelocity: 32, capacity: 40 })
+        ];
+
+        sprintRepository.findOne.mockResolvedValue(sprintPastEndDate);
+        sprintRepository.find.mockResolvedValue(historicalSprints);
+        sprintRepository.save.mockResolvedValue(sprintPastEndDate);
+
+        // Act
+        const result = await service.calculateProjectedVelocity(sprintId);
+
+        // Assert
+        expect(result.projectedVelocity).toBe(32); // 40 * 0.8 = 32
+        expect(sprintRepository.save).toHaveBeenCalled();
+      });
+
+      it('should calculate projected velocity for active sprint', async () => {
+        // Arrange
+        const sprintId = 1;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const activeSprint = createTestSprint({
+          id: sprintId,
+          endDate: tomorrow, // Active sprint
+          teamId: 1,
+          teamMemberCapacities: [createTestTeamMemberCapacity({ capacity: 40 })]
+        });
+
+        const historicalSprints = [
+          createTestSprint({ id: 2, completedVelocity: 32, capacity: 40 })
+        ];
+
+        sprintRepository.findOne.mockResolvedValue(activeSprint);
+        sprintRepository.find.mockResolvedValue(historicalSprints);
+        sprintRepository.save.mockResolvedValue(activeSprint);
+
+        // Act
+        const result = await service.calculateProjectedVelocity(sprintId);
+
+        // Assert
+        expect(result.projectedVelocity).toBe(32); // 40 * 0.8 = 32
+        expect(sprintRepository.save).toHaveBeenCalled();
+      });
     });
   });
 });
