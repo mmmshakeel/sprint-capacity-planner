@@ -223,7 +223,7 @@ export class SprintService {
    * Determines if a sprint is completed based on its end date and completed velocity
    * A sprint is considered completed if:
    * 1. The current date is after the sprint end date, AND
-   * 2. The sprint has a completed velocity value (indicating it has been finalized)
+   * 2. The sprint has completed story points greater than 0 (indicating actual work was delivered)
    */
   isSprintCompleted(sprint: Sprint): boolean {
     const currentDate = new Date();
@@ -233,9 +233,9 @@ export class SprintService {
     sprintEndDate.setHours(23, 59, 59, 999);
 
     const isPastEndDate = currentDate > sprintEndDate;
-    const hasCompletedVelocity = sprint.completedVelocity !== null && sprint.completedVelocity !== undefined;
+    const hasCompletedStoryPoints = sprint.completedVelocity > 0;
 
-    return isPastEndDate && hasCompletedVelocity;
+    return isPastEndDate && hasCompletedStoryPoints;
   }
 
   /**
