@@ -15,6 +15,7 @@ dist/
 
 # Database
 mysql_data/
+/backend/data
 
 # Logs
 npm-debug.log*
