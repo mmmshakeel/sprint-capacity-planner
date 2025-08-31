@@ -6,6 +6,7 @@ export interface Sprint {
   capacity: number;
   projectedVelocity: number;
   completedVelocity: number;
+  velocityCommitment?: number;
   teamId?: number;
   team?: Team;
   teamMemberCapacities?: TeamMemberSprintCapacity[];
@@ -45,6 +46,7 @@ export interface CreateSprintDto {
   name: string;
   startDate: string;
   endDate: string;
+  velocityCommitment?: number;
   teamId?: number;
   teamMemberCapacities: {
     teamMemberId: number;
@@ -57,6 +59,7 @@ export interface UpdateSprintDto {
   startDate?: string;
   endDate?: string;
   completedVelocity?: number;
+  velocityCommitment?: number;
   teamId?: number;
 }
 

@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsDateString, IsNumber, IsOptional, IsArray, ValidateNested, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,6 +29,12 @@ export class CreateSprintDto {
   @IsOptional()
   @IsNumber()
   completedVelocity?: number;
+
+  @ApiPropertyOptional({ description: 'Team velocity commitment in story points', example: 40 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1, { message: 'Velocity commitment must be greater than 0' })
+  velocityCommitment?: number;
 
   @ApiPropertyOptional({ description: 'Team member capacity allocations', type: [TeamMemberCapacityDto] })
   @IsOptional()

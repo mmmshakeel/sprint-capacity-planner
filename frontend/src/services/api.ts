@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import {
   Sprint,
   TeamMember,
@@ -23,6 +23,20 @@ const api = axios.create({
   },
 });
 
+// Enhanced error handling for API responses
+const handleApiError = (error: AxiosError): never => {
+  if (error.response?.status === 400) {
+    const errorData = error.response.data as any;
+    if (errorData?.message?.includes('velocityCommitment')) {
+      throw new Error('Invalid velocity commitment value. Please enter a positive number.');
+    }
+    if (errorData?.message?.includes('completed sprint')) {
+      throw new Error('Cannot modify completed sprints. Velocity commitment and projected velocity are read-only.');
+    }
+  }
+  throw error;
+};
+
 export const sprintApi = {
   getAllSprints: async (page: number = 1, limit: number = 10, teamId?: number): Promise<SprintListResponse> => {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
@@ -37,13 +51,21 @@ export const sprintApi = {
   },
 
   createSprint: async (data: CreateSprintDto): Promise<Sprint> => {
-    const response = await api.post('/sprints', data);
-    return response.data;
+    try {
+      const response = await api.post('/sprints', data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
   },
 
   updateSprint: async (id: number, data: UpdateSprintDto): Promise<Sprint> => {
-    const response = await api.patch(`/sprints/${id}`, data);
-    return response.data;
+    try {
+      const response = await api.patch(`/sprints/${id}`, data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
   },
 
   deleteSprint: async (id: number): Promise<void> => {

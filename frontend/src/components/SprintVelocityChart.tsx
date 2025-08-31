@@ -13,6 +13,7 @@ interface ChartData {
   datasets: {
     projectedVelocity: number[];
     completedVelocity: number[];
+    velocityCommitment: (number | null)[];
   };
 }
 
@@ -58,12 +59,17 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
     const labels = sortedSprints.map(sprint => sprint.name);
     const projectedVelocity = sortedSprints.map(sprint => sprint.projectedVelocity || 0);
     const completedVelocity = sortedSprints.map(sprint => sprint.completedVelocity);
+    // Handle null/undefined commitment values gracefully
+    const velocityCommitment = sortedSprints.map(sprint => 
+      typeof sprint.velocityCommitment === 'number' ? sprint.velocityCommitment : null
+    );
 
     return {
       labels,
       datasets: {
         projectedVelocity,
         completedVelocity,
+        velocityCommitment,
       },
     };
   };
@@ -275,6 +281,8 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
           overflowX: isMobile && chartData.labels.length > 6 ? 'auto' : 'visible',
           minWidth: isMobile ? '320px' : 'auto',
         }}
+        role="img"
+        aria-label={`Sprint velocity chart showing projected, completed, and commitment data for ${chartData.labels.length} sprints`}
       >
         <LineChart
           width={undefined}
@@ -290,9 +298,16 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
             {
               data: chartData.datasets.completedVelocity,
               label: isMobile ? 'Completed' : 'Completed Velocity',
-              color: theme.palette.secondary.main,
+              color: theme.palette.success.main,
               curve: 'natural',
               connectNulls: true,
+            },
+            {
+              data: chartData.datasets.velocityCommitment,
+              label: isMobile ? 'Commitment' : 'Velocity Commitment',
+              color: theme.palette.secondary.main,
+              curve: 'natural',
+              connectNulls: false, // Don't connect null values for commitment
             },
           ]}
           xAxis={[
@@ -381,6 +396,11 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
                 outline: `2px solid ${theme.palette.primary.main}`,
                 outlineOffset: '2px',
               },
+              // Ensure commitment line (third series) has distinct styling
+              '&:nth-of-type(3)': {
+                strokeDasharray: isMobile ? '4 4' : '6 6', // Dashed line for commitment
+                strokeWidth: isMobile ? 2.5 : 3,
+              },
             },
             // Enhanced touch targets for mobile
             '& .MuiMarkElement-root': {
@@ -394,7 +414,7 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
             '& .MuiChartsAxisHighlight-root': {
               display: 'none',
             },
-            // Responsive tooltip styling
+            // Responsive tooltip styling with commitment data support
             '& .MuiChartsTooltip-root': {
               backgroundColor: theme.palette.background.paper,
               border: `1px solid ${theme.palette.divider}`,
@@ -403,8 +423,9 @@ const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({ teamId }) => 
               color: theme.palette.text.primary,
               fontSize: isMobile ? '0.75rem' : '0.875rem',
               padding: theme.spacing(isMobile ? 0.75 : 1),
-              maxWidth: isMobile ? '200px' : '300px',
+              maxWidth: isMobile ? '220px' : '320px', // Slightly wider for commitment data
               wordWrap: 'break-word',
+              zIndex: theme.zIndex.tooltip,
             },
             // Mobile-specific optimizations
             ...(isMobile && {

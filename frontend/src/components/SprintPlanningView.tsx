@@ -49,6 +49,7 @@ const SprintPlanningView: React.FC = () => {
   const [sprintName, setSprintName] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [velocityCommitment, setVelocityCommitment] = useState<number | ''>('');
   const [completedVelocity, setCompletedVelocity] = useState(0);
   const [teamMemberCapacities, setTeamMemberCapacities] = useState<Record<number, number>>({});
 
@@ -56,6 +57,19 @@ const SprintPlanningView: React.FC = () => {
   const [workingDays, setWorkingDays] = useState<number | null>(null);
   const [projectedVelocity, setProjectedVelocity] = useState<number | null>(null);
   const [averageStoryCompletion, setAverageStoryCompletion] = useState<number | null>(null);
+
+  // Helper function to determine if sprint is completed
+  const isSprintCompleted = () => {
+    if (!endDate) return false;
+    const today = new Date();
+    const sprintEndDate = new Date(endDate);
+    return today > sprintEndDate;
+  };
+
+  // Helper function to validate velocity commitment
+  const isVelocityCommitmentValid = () => {
+    return velocityCommitment === '' || (Number(velocityCommitment) > 0);
+  };
 
   useEffect(() => {
     fetchData();
@@ -76,6 +90,7 @@ const SprintPlanningView: React.FC = () => {
         setSprintName(sprintData.name);
         setStartDate(new Date(sprintData.startDate));
         setEndDate(new Date(sprintData.endDate));
+        setVelocityCommitment(sprintData.velocityCommitment || '');
         setCompletedVelocity(sprintData.completedVelocity);
         setTeamMembers(sprintTeamMembers);
         
@@ -171,6 +186,12 @@ const SprintPlanningView: React.FC = () => {
       return;
     }
 
+    // Validate velocity commitment if provided
+    if (!isVelocityCommitmentValid()) {
+      setError('Team velocity commitment must be a positive number');
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
@@ -188,7 +209,8 @@ const SprintPlanningView: React.FC = () => {
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
           teamId: selectedTeam?.id,
-          teamMemberCapacities: teamMemberCapacitiesArray
+          teamMemberCapacities: teamMemberCapacitiesArray,
+          ...(velocityCommitment !== '' && Number(velocityCommitment) > 0 && { velocityCommitment: Number(velocityCommitment) })
         };
 
         const newSprint = await sprintApi.createSprint(createDto);
@@ -198,7 +220,8 @@ const SprintPlanningView: React.FC = () => {
           name: sprintName,
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
-          completedVelocity: completedVelocity
+          completedVelocity: completedVelocity,
+          ...(velocityCommitment !== '' && Number(velocityCommitment) > 0 && { velocityCommitment: Number(velocityCommitment) })
         };
 
         await sprintApi.updateSprint(Number(id), updateDto);
@@ -226,16 +249,23 @@ const SprintPlanningView: React.FC = () => {
 
   const handleQuickSave = async () => {
     if (!isNewSprint) {
+      // Validate velocity commitment before saving
+      if (!isVelocityCommitmentValid()) {
+        setError('Team velocity commitment must be a positive number');
+        return;
+      }
+
       try {
         setSaving(true);
         const updateDto: UpdateSprintDto = {
-          completedVelocity: completedVelocity
+          completedVelocity: completedVelocity,
+          ...(velocityCommitment !== '' && Number(velocityCommitment) > 0 && { velocityCommitment: Number(velocityCommitment) })
         };
         await sprintApi.updateSprint(Number(id), updateDto);
         setError(null);
       } catch (err) {
-        setError('Failed to save completed velocity');
-        console.error('Error saving completed velocity:', err);
+        setError('Failed to save sprint data');
+        console.error('Error saving sprint data:', err);
       } finally {
         setSaving(false);
       }
@@ -328,6 +358,11 @@ const SprintPlanningView: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Sprint Details
               </Typography>
+              {!isNewSprint && isSprintCompleted() && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  This sprint has ended. Velocity commitment and projected velocity cannot be modified.
+                </Alert>
+              )}
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <TextField
@@ -352,6 +387,29 @@ const SprintPlanningView: React.FC = () => {
                     value={endDate ? dayjs(endDate) : null}
                     onChange={(date) => setEndDate(date ? date.toDate() : null)}
                     slotProps={{ textField: { fullWidth: true, required: true } }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Team Velocity Commitment"
+                    type="number"
+                    value={velocityCommitment}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setVelocityCommitment(value === '' ? '' : Number(value));
+                    }}
+                    InputProps={{ 
+                      inputProps: { min: 1 },
+                      readOnly: !isNewSprint && isSprintCompleted()
+                    }}
+                    helperText={
+                      !isNewSprint && isSprintCompleted() 
+                        ? "Cannot edit velocity commitment for completed sprints"
+                        : "Set the team's velocity commitment for this sprint (story points)"
+                    }
+                    error={!isVelocityCommitmentValid()}
+                    disabled={!isNewSprint && isSprintCompleted()}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -517,7 +575,7 @@ const SprintPlanningView: React.FC = () => {
                 variant="contained"
                 startIcon={<Calculate />}
                 onClick={isNewSprint ? handleSave : handleCalculateProjectedVelocity}
-                disabled={saving || calculating}
+                disabled={saving || calculating || (!isNewSprint && isSprintCompleted())}
               >
                 {calculating ? 'Calculating...' : isNewSprint ? 'Save & Calculate' : (projectedVelocity !== null && projectedVelocity > 0) ? 'Recalculate Projected Velocity' : 'Calculate Projected Velocity'}
               </Button>

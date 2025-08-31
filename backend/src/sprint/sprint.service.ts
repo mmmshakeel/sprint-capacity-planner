@@ -16,7 +16,7 @@ export class SprintService {
     private teamMemberSprintCapacityRepository: Repository<TeamMemberSprintCapacity>,
     @InjectRepository(TeamMember)
     private teamMemberRepository: Repository<TeamMember>,
-  ) {}
+  ) { }
 
   async create(createSprintDto: CreateSprintDto): Promise<Sprint> {
     const sprint = this.sprintRepository.create({
@@ -24,13 +24,14 @@ export class SprintService {
       startDate: new Date(createSprintDto.startDate),
       endDate: new Date(createSprintDto.endDate),
       completedVelocity: createSprintDto.completedVelocity || 0,
+      velocityCommitment: createSprintDto.velocityCommitment,
       teamId: createSprintDto.teamId,
     });
 
     const savedSprint = await this.sprintRepository.save(sprint);
 
     if (createSprintDto.teamMemberCapacities) {
-      const capacities = createSprintDto.teamMemberCapacities.map(capacity => 
+      const capacities = createSprintDto.teamMemberCapacities.map(capacity =>
         this.teamMemberSprintCapacityRepository.create({
           sprintId: savedSprint.id,
           teamMemberId: capacity.teamMemberId,
@@ -69,19 +70,28 @@ export class SprintService {
 
   async update(id: number, updateSprintDto: UpdateSprintDto): Promise<Sprint> {
     const sprint = await this.findOne(id);
-    
+
+    // Check if trying to edit velocity commitment or projected velocity in completed sprint
+    if (this.isSprintCompleted(sprint)) {
+      if (updateSprintDto.velocityCommitment !== undefined ||
+        updateSprintDto.completedVelocity !== undefined) {
+        this.validateSprintCanBeEdited(sprint);
+      }
+    }
+
     if (updateSprintDto.name) sprint.name = updateSprintDto.name;
     if (updateSprintDto.startDate) sprint.startDate = new Date(updateSprintDto.startDate);
     if (updateSprintDto.endDate) sprint.endDate = new Date(updateSprintDto.endDate);
     if (updateSprintDto.completedVelocity !== undefined) sprint.completedVelocity = updateSprintDto.completedVelocity;
+    if (updateSprintDto.velocityCommitment !== undefined) sprint.velocityCommitment = updateSprintDto.velocityCommitment;
     if (updateSprintDto.teamId !== undefined) sprint.teamId = updateSprintDto.teamId;
 
     await this.sprintRepository.save(sprint);
 
     if (updateSprintDto.teamMemberCapacities) {
       await this.teamMemberSprintCapacityRepository.delete({ sprintId: id });
-      
-      const capacities = updateSprintDto.teamMemberCapacities.map(capacity => 
+
+      const capacities = updateSprintDto.teamMemberCapacities.map(capacity =>
         this.teamMemberSprintCapacityRepository.create({
           sprintId: id,
           teamMemberId: capacity.teamMemberId,
@@ -101,7 +111,10 @@ export class SprintService {
 
   async calculateProjectedVelocity(id: number): Promise<{ projectedVelocity: number; averageStoryCompletion: number; sprintsAnalyzed: number }> {
     const sprint = await this.findOne(id);
-    
+
+    // Prevent calculating projected velocity for completed sprints
+    this.validateSprintCanBeEdited(sprint);
+
     const totalCapacity = sprint.teamMemberCapacities.reduce((sum, tc) => sum + tc.capacity, 0);
     sprint.capacity = totalCapacity;
 
@@ -125,7 +138,7 @@ export class SprintService {
     }
 
     const projectedVelocity = Math.round(totalCapacity * averageCompletionRate);
-    
+
     sprint.projectedVelocity = projectedVelocity;
     await this.sprintRepository.save(sprint);
 
@@ -165,17 +178,17 @@ export class SprintService {
 
   async updateTeamMemberCapacities(sprintId: number, capacities: TeamMemberCapacityDto[]): Promise<Sprint> {
     await this.teamMemberSprintCapacityRepository.delete({ sprintId });
-    
+
     const capacityEntities = capacities
       .filter(capacity => capacity.capacity > 0)
-      .map(capacity => 
+      .map(capacity =>
         this.teamMemberSprintCapacityRepository.create({
           sprintId,
           teamMemberId: capacity.teamMemberId,
           capacity: capacity.capacity,
         })
       );
-    
+
     if (capacityEntities.length > 0) {
       await this.teamMemberSprintCapacityRepository.save(capacityEntities);
     }
@@ -204,5 +217,41 @@ export class SprintService {
 
   async removeTeamMember(sprintId: number, teamMemberId: number): Promise<void> {
     await this.teamMemberSprintCapacityRepository.delete({ sprintId, teamMemberId });
+  }
+
+  /**
+   * Determines if a sprint is completed based on its end date and completed velocity
+   * A sprint is considered completed if:
+   * 1. The current date is after the sprint end date, AND
+   * 2. The sprint has a completed velocity value (indicating it has been finalized)
+   */
+  isSprintCompleted(sprint: Sprint): boolean {
+    const currentDate = new Date();
+    const sprintEndDate = new Date(sprint.endDate);
+
+    // Set time to end of day for sprint end date to ensure sprint is considered active on its end date
+    sprintEndDate.setHours(23, 59, 59, 999);
+
+    const isPastEndDate = currentDate > sprintEndDate;
+    const hasCompletedVelocity = sprint.completedVelocity !== null && sprint.completedVelocity !== undefined;
+
+    return isPastEndDate && hasCompletedVelocity;
+  }
+
+  /**
+   * Determines if a sprint can be edited
+   * Sprints cannot be edited if they are completed
+   */
+  canEditSprint(sprint: Sprint): boolean {
+    return !this.isSprintCompleted(sprint);
+  }
+
+  /**
+   * Validates that a sprint can be edited, throws error if not
+   */
+  validateSprintCanBeEdited(sprint: Sprint): void {
+    if (!this.canEditSprint(sprint)) {
+      throw new Error('Cannot edit completed sprint. Projected velocity and velocity commitment cannot be modified after sprint completion.');
+    }
   }
 }
