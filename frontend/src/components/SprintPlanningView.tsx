@@ -63,7 +63,29 @@ const SprintPlanningView: React.FC = () => {
     if (!endDate) return false;
     const today = new Date();
     const sprintEndDate = new Date(endDate);
-    return today > sprintEndDate;
+
+    // Set time to end of day for sprint end date to ensure sprint is considered active on its end date
+    sprintEndDate.setHours(23, 59, 59, 999);
+
+    const isPastEndDate = today > sprintEndDate;
+    const hasCompletedStoryPoints = completedVelocity > 0;
+
+    return isPastEndDate && hasCompletedStoryPoints;
+  };
+
+  // Helper function to determine if sprint is past end date but has no completed story points
+  const isSprintPastEndDateWithoutStoryPoints = () => {
+    if (!endDate) return false;
+    const today = new Date();
+    const sprintEndDate = new Date(endDate);
+
+    // Set time to end of day for sprint end date to ensure sprint is considered active on its end date
+    sprintEndDate.setHours(23, 59, 59, 999);
+
+    const isPastEndDate = today > sprintEndDate;
+    const hasNoCompletedStoryPoints = completedVelocity === 0;
+
+    return isPastEndDate && hasNoCompletedStoryPoints;
   };
 
   // Helper function to validate velocity commitment
@@ -78,14 +100,14 @@ const SprintPlanningView: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       if (!isNewSprint) {
         // Fetch sprint data and its assigned team members
         const [sprintData, sprintTeamMembers] = await Promise.all([
           sprintApi.getSprintById(Number(id)),
           sprintApi.getSprintTeamMembers(Number(id))
         ]);
-        
+
         setSprint(sprintData);
         setSprintName(sprintData.name);
         setStartDate(new Date(sprintData.startDate));
@@ -93,7 +115,7 @@ const SprintPlanningView: React.FC = () => {
         setVelocityCommitment(sprintData.velocityCommitment || '');
         setCompletedVelocity(sprintData.completedVelocity);
         setTeamMembers(sprintTeamMembers);
-        
+
         // Set projected velocity if it exists in the sprint data
         if (sprintData.projectedVelocity && sprintData.projectedVelocity > 0) {
           setProjectedVelocity(sprintData.projectedVelocity);
@@ -225,7 +247,7 @@ const SprintPlanningView: React.FC = () => {
         };
 
         await sprintApi.updateSprint(Number(id), updateDto);
-        
+
         // Update team member capacities separately
         const teamMemberCapacitiesArray = Object.entries(teamMemberCapacities)
           .filter(([_, capacity]) => capacity > 0)
@@ -235,7 +257,7 @@ const SprintPlanningView: React.FC = () => {
           }));
 
         await sprintApi.updateTeamMemberCapacities(Number(id), teamMemberCapacitiesArray);
-        
+
         // After saving, calculate projected velocity
         await handleCalculateProjectedVelocity();
       }
@@ -280,17 +302,17 @@ const SprintPlanningView: React.FC = () => {
 
     try {
       await sprintApi.assignTeamMember(Number(id), { teamMemberId, capacity });
-      
+
       // Refresh team members and capacities
       const sprintTeamMembers = await sprintApi.getSprintTeamMembers(Number(id));
       setTeamMembers(sprintTeamMembers);
-      
+
       const capacities: Record<number, number> = {};
       sprintTeamMembers.forEach(member => {
         capacities[member.id] = (member as any).capacity || 0;
       });
       setTeamMemberCapacities(capacities);
-      
+
       setError(null);
     } catch (err) {
       setError('Failed to assign team member');
@@ -307,7 +329,7 @@ const SprintPlanningView: React.FC = () => {
 
     try {
       await sprintApi.removeTeamMember(Number(id), teamMemberId);
-      
+
       // Remove from local state
       setTeamMembers(prev => prev.filter(member => member.id !== teamMemberId));
       setTeamMemberCapacities(prev => {
@@ -315,7 +337,7 @@ const SprintPlanningView: React.FC = () => {
         delete updated[teamMemberId];
         return updated;
       });
-      
+
       setError(null);
     } catch (err) {
       setError('Failed to remove team member');
@@ -363,6 +385,11 @@ const SprintPlanningView: React.FC = () => {
                   This sprint has ended. Velocity commitment and projected velocity cannot be modified.
                 </Alert>
               )}
+              {!isNewSprint && isSprintPastEndDateWithoutStoryPoints() && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  This sprint has ended but has no completed story points. Velocity commitment and projected velocity can still be modified until story points are added.
+                </Alert>
+              )}
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <TextField
@@ -399,13 +426,15 @@ const SprintPlanningView: React.FC = () => {
                       const value = e.target.value;
                       setVelocityCommitment(value === '' ? '' : Number(value));
                     }}
-                    InputProps={{ 
+                    InputProps={{
                       inputProps: { min: 1 },
                       readOnly: !isNewSprint && isSprintCompleted()
                     }}
                     helperText={
-                      !isNewSprint && isSprintCompleted() 
+                      !isNewSprint && isSprintCompleted()
                         ? "Cannot edit velocity commitment for completed sprints"
+                        : !isNewSprint && isSprintPastEndDateWithoutStoryPoints()
+                        ? "Sprint has ended but can still be modified until story points are added"
                         : "Set the team's velocity commitment for this sprint (story points)"
                     }
                     error={!isVelocityCommitmentValid()}
@@ -440,7 +469,7 @@ const SprintPlanningView: React.FC = () => {
                   Total Capacity: {getTotalCapacity()} days
                 </Typography>
               </Box>
-              
+
               <Typography variant="subtitle2" gutterBottom>
                 Capacity by Skill:
               </Typography>
@@ -490,11 +519,11 @@ const SprintPlanningView: React.FC = () => {
                   </Button>
                 )}
               </Box>
-              
+
               {teamMembers.length === 0 ? (
                 <Box textAlign="center" py={4}>
                   <Typography variant="body2" color="text.secondary">
-                    {isNewSprint 
+                    {isNewSprint
                       ? 'Save the sprint first to assign team members'
                       : 'No team members assigned to this sprint yet'
                     }
