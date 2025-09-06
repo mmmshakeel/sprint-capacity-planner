@@ -174,7 +174,7 @@ const Dashboard: React.FC = () => {
                     Current Sprint
                   </Typography>
                 </Box>
-                <Typography variant="h4" color="warning">
+                <Typography variant="h6" color="warning">
                   {metrics.currentSprint ? metrics.currentSprint.name : 'None'}
                 </Typography>
               </CardContent>

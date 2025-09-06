@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
-import { Sprint } from '../entities/sprint.entity';
-import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacity.entity';
-import { TeamMember } from '../entities/team-member.entity';
-import { CreateSprintDto, TeamMemberCapacityDto } from './dto/create-sprint.dto';
-import { UpdateSprintDto } from './dto/update-sprint.dto';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {MoreThan, Repository} from 'typeorm';
+import {Sprint} from '../entities/sprint.entity';
+import {TeamMemberSprintCapacity} from '../entities/team-member-sprint-capacity.entity';
+import {TeamMember} from '../entities/team-member.entity';
+import {CreateSprintDto, TeamMemberCapacityDto} from './dto/create-sprint.dto';
+import {UpdateSprintDto} from './dto/update-sprint.dto';
 
 @Injectable()
 export class SprintService {
@@ -115,6 +115,7 @@ export class SprintService {
     // Prevent calculating projected velocity for completed sprints
     this.validateSprintCanBeEdited(sprint);
 
+    const defaultAverageCompletionRate = 0.8;
     const totalCapacity = sprint.teamMemberCapacities.reduce((sum, tc) => sum + tc.capacity, 0);
     sprint.capacity = totalCapacity;
 
@@ -130,21 +131,28 @@ export class SprintService {
       take: 6,
     });
 
-    let averageCompletionRate = 0.8; // Default fallback
+    let averageCompletionRate = defaultAverageCompletionRate
 
     if (lastSprints.length > 0) {
       const completionRates = lastSprints.map(s => s.capacity > 0 ? s.completedVelocity / s.capacity : 0);
       averageCompletionRate = completionRates.reduce((sum, rate) => sum + rate, 0) / completionRates.length;
     }
 
-    const projectedVelocity = Math.round(totalCapacity * averageCompletionRate);
+    let projectedVelocity = Math.round(totalCapacity * averageCompletionRate);
 
+    // If projected velocity is 0 (e.g., no team members assigned), fallback to average velocity of last completed sprints
+    if (projectedVelocity === 0) {
+      const completedSprints = lastSprints.filter(s => s.completedVelocity > 0);
+      projectedVelocity = completedSprints.length > 0
+          ? Math.round(completedSprints.reduce((sum, s) => sum + s.completedVelocity, 0) / completedSprints.length)
+          : 0;
+    }
     sprint.projectedVelocity = projectedVelocity;
     await this.sprintRepository.save(sprint);
 
     return {
       projectedVelocity,
-      averageStoryCompletion: averageCompletionRate,
+      averageStoryCompletion: averageCompletionRate || defaultAverageCompletionRate,
       sprintsAnalyzed: lastSprints.length
     };
   }
