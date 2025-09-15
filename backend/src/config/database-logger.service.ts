@@ -11,11 +11,19 @@ export class DatabaseLoggerService {
   /**
    * Logs database selection and configuration details
    */
-  logDatabaseSelection(type: 'mysql' | 'sqlite', config: any): void {
+  logDatabaseSelection(type: 'mysql' | 'sqlite' | 'postgresql', config: any): void {
     this.logger.log(`🗄️  Database Type Selected: ${type.toUpperCase()}`);
     
     if (type === 'mysql') {
       this.logger.log(`📡 MySQL Configuration:`);
+      this.logger.log(`   Host: ${config.host}:${config.port}`);
+      this.logger.log(`   Database: ${config.database}`);
+      this.logger.log(`   Username: ${config.username}`);
+      this.logger.log(`   SSL: ${config.ssl ? 'enabled' : 'disabled'}`);
+      this.logger.log(`   Retry Attempts: ${config.retryAttempts}`);
+      this.logger.log(`   Synchronize: ${config.synchronize}`);
+    } else if (type === 'postgresql') {
+      this.logger.log(`🐘 PostgreSQL Configuration:`);
       this.logger.log(`   Host: ${config.host}:${config.port}`);
       this.logger.log(`   Database: ${config.database}`);
       this.logger.log(`   Username: ${config.username}`);
@@ -33,14 +41,14 @@ export class DatabaseLoggerService {
   /**
    * Logs successful database connection
    */
-  logConnectionSuccess(type: 'mysql' | 'sqlite'): void {
+  logConnectionSuccess(type: 'mysql' | 'sqlite' | 'postgresql'): void {
     this.logger.log(`✅ ${type.toUpperCase()} database connection established successfully`);
   }
 
   /**
    * Logs database connection attempt
    */
-  logConnectionAttempt(type: 'mysql' | 'sqlite', attempt?: number): void {
+  logConnectionAttempt(type: 'mysql' | 'sqlite' | 'postgresql', attempt?: number): void {
     const attemptText = attempt ? ` (attempt ${attempt})` : '';
     this.logger.log(`🔄 Attempting to connect to ${type.toUpperCase()} database${attemptText}...`);
   }
@@ -48,13 +56,15 @@ export class DatabaseLoggerService {
   /**
    * Logs database connection failure with specific error details
    */
-  logConnectionError(type: 'mysql' | 'sqlite', error: any, attempt?: number): void {
+  logConnectionError(type: 'mysql' | 'sqlite' | 'postgresql', error: any, attempt?: number): void {
     const attemptText = attempt ? ` (attempt ${attempt})` : '';
     this.logger.error(`❌ ${type.toUpperCase()} database connection failed${attemptText}`);
     
     // Log specific error details based on database type
     if (type === 'mysql') {
       this.logMySQLError(error);
+    } else if (type === 'postgresql') {
+      this.logPostgreSQLError(error);
     } else if (type === 'sqlite') {
       this.logSQLiteError(error);
     }
@@ -89,6 +99,38 @@ export class DatabaseLoggerService {
         break;
       default:
         this.logger.error('💡 Troubleshooting: Verify all MySQL environment variables and server status');
+    }
+  }
+
+  /**
+   * Logs PostgreSQL-specific error details
+   */
+  private logPostgreSQLError(error: any): void {
+    const errorCode = error.code || error.errno;
+    const errorMessage = error.message || 'Unknown PostgreSQL error';
+
+    this.logger.error(`PostgreSQL Error Code: ${errorCode}`);
+    this.logger.error(`PostgreSQL Error Message: ${errorMessage}`);
+
+    // Provide specific guidance for common PostgreSQL errors
+    switch (errorCode) {
+      case '28P01':
+        this.logger.error('💡 Troubleshooting: Check DATABASE_USER and DATABASE_PASSWORD environment variables');
+        break;
+      case '3D000':
+        this.logger.error('💡 Troubleshooting: Check DATABASE_NAME environment variable - database may not exist');
+        break;
+      case 'ECONNREFUSED':
+        this.logger.error('💡 Troubleshooting: Check DATABASE_HOST and DATABASE_PORT - PostgreSQL server may not be running');
+        break;
+      case 'ENOTFOUND':
+        this.logger.error('💡 Troubleshooting: Check DATABASE_HOST - hostname cannot be resolved');
+        break;
+      case 'ETIMEDOUT':
+        this.logger.error('💡 Troubleshooting: Connection timeout - check network connectivity and firewall settings');
+        break;
+      default:
+        this.logger.error('💡 Troubleshooting: Verify all PostgreSQL environment variables and server status');
     }
   }
 
@@ -130,14 +172,14 @@ export class DatabaseLoggerService {
   /**
    * Logs database configuration validation errors
    */
-  logConfigurationError(type: 'mysql' | 'sqlite', error: string): void {
+  logConfigurationError(type: 'mysql' | 'sqlite' | 'postgresql', error: string): void {
     this.logger.error(`⚙️  ${type.toUpperCase()} Configuration Error: ${error}`);
   }
 
   /**
    * Logs database configuration warnings
    */
-  logConfigurationWarning(type: 'mysql' | 'sqlite', warning: string): void {
+  logConfigurationWarning(type: 'mysql' | 'sqlite' | 'postgresql', warning: string): void {
     this.logger.warn(`⚠️  ${type.toUpperCase()} Configuration Warning: ${warning}`);
   }
 
@@ -167,6 +209,12 @@ export class DatabaseLoggerService {
     if (dbType === 'mysql') {
       this.logger.debug(`   DATABASE_HOST: ${process.env.DATABASE_HOST || 'not set (defaults to localhost)'}`);
       this.logger.debug(`   DATABASE_PORT: ${process.env.DATABASE_PORT || 'not set (defaults to 3306)'}`);
+      this.logger.debug(`   DATABASE_NAME: ${process.env.DATABASE_NAME || 'not set'}`);
+      this.logger.debug(`   DATABASE_USER: ${process.env.DATABASE_USER ? '***set***' : 'not set'}`);
+      this.logger.debug(`   DATABASE_PASSWORD: ${process.env.DATABASE_PASSWORD ? '***set***' : 'not set'}`);
+    } else if (dbType === 'postgresql') {
+      this.logger.debug(`   DATABASE_HOST: ${process.env.DATABASE_HOST || 'not set (defaults to localhost)'}`);
+      this.logger.debug(`   DATABASE_PORT: ${process.env.DATABASE_PORT || 'not set (defaults to 5432)'}`);
       this.logger.debug(`   DATABASE_NAME: ${process.env.DATABASE_NAME || 'not set'}`);
       this.logger.debug(`   DATABASE_USER: ${process.env.DATABASE_USER ? '***set***' : 'not set'}`);
       this.logger.debug(`   DATABASE_PASSWORD: ${process.env.DATABASE_PASSWORD ? '***set***' : 'not set'}`);

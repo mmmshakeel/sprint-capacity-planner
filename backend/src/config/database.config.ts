@@ -12,7 +12,7 @@ import * as fs from 'fs';
  * Base database configuration interface
  */
 export interface DatabaseConfig {
-  type: 'mysql' | 'sqlite';
+  type: 'mysql' | 'sqlite' | 'postgresql';
   entities: any[];
   synchronize: boolean;
   logging: any;
@@ -39,6 +39,21 @@ export interface MySqlConfig extends DatabaseConfig {
 export interface SqliteConfig extends DatabaseConfig {
   type: 'sqlite';
   database: string; // File path for SQLite
+}
+
+/**
+ * PostgreSQL-specific database configuration interface
+ */
+export interface PostgreSqlConfig extends DatabaseConfig {
+  type: 'postgresql';
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  ssl?: any;
+  retryAttempts?: number;
+  retryDelay?: number;
 }
 
 /**
@@ -189,7 +204,7 @@ export function createSqliteConfig(): SqliteConfig {
 /**
  * Validates database type and returns normalized type
  */
-export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlite' {
+export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlite' | 'postgresql' {
   // Handle undefined or empty type
   if (!type || type.trim() === '') {
     return 'mysql'; // Default to mysql for backward compatibility
@@ -197,13 +212,13 @@ export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlit
   
   const normalizedType = type.toLowerCase().trim();
   
-  if (normalizedType === 'mysql' || normalizedType === 'sqlite') {
-    return normalizedType as 'mysql' | 'sqlite';
+  if (normalizedType === 'mysql' || normalizedType === 'sqlite' || normalizedType === 'postgresql') {
+    return normalizedType as 'mysql' | 'sqlite' | 'postgresql';
   }
   
   throw new Error(
     `Unsupported database type: "${type}". ` +
-    'Supported types are: "mysql", "sqlite". ' +
+    'Supported types are: "mysql", "sqlite", "postgresql". ' +
     'Please set DATABASE_TYPE environment variable to one of the supported values.'
   );
 }

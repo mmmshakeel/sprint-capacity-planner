@@ -71,7 +71,7 @@ describe('Database Integration Tests', () => {
     });
 
     it('should throw enhanced error for unsupported database type', () => {
-      process.env.DATABASE_TYPE = 'postgresql';
+      process.env.DATABASE_TYPE = 'oracle';
 
       expect(() => createDatabaseConfig()).toThrow(/Unsupported database type/);
       expect(() => createDatabaseConfig()).toThrow(/Supported types are/);

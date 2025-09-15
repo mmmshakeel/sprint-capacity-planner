@@ -36,9 +36,11 @@ export class DatabaseErrorHandlerService {
   /**
    * Processes and categorizes database errors
    */
-  handleDatabaseError(error: any, databaseType: 'mysql' | 'sqlite'): DatabaseError {
+  handleDatabaseError(error: any, databaseType: 'mysql' | 'sqlite' | 'postgresql'): DatabaseError {
     if (databaseType === 'mysql') {
       return this.handleMySQLError(error);
+    } else if (databaseType === 'postgresql') {
+      return this.handlePostgreSQLError(error);
     } else if (databaseType === 'sqlite') {
       return this.handleSQLiteError(error);
     }
@@ -159,6 +161,131 @@ export class DatabaseErrorHandlerService {
             'Check MySQL server logs for more details',
             'Verify all MySQL environment variables',
             'Ensure MySQL server is properly configured',
+            'Contact your database administrator if the problem persists'
+          ],
+          isRetryable: false
+        };
+    }
+  }
+
+  /**
+   * Handles PostgreSQL-specific errors
+   */
+  private handlePostgreSQLError(error: any): DatabaseError {
+    if (!error) {
+      return this.createUnknownError(new Error('Null or undefined PostgreSQL error'));
+    }
+    
+    const errorCode = error.code || error.errno;
+    const errorMessage = error.message || 'Unknown PostgreSQL error';
+
+    switch (errorCode) {
+      case '28P01':
+        return {
+          type: DatabaseErrorType.AUTHENTICATION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL authentication failed. Please check your username and password.',
+          technicalMessage: `PostgreSQL authentication error: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_USER environment variable is correct',
+            'Verify DATABASE_PASSWORD environment variable is correct',
+            'Ensure the PostgreSQL user has proper permissions',
+            'Check if the PostgreSQL user account is not locked or expired',
+            'Verify SSL configuration for cloud providers like Supabase'
+          ],
+          isRetryable: false
+        };
+
+      case '3D000':
+        return {
+          type: DatabaseErrorType.DATABASE_NOT_FOUND,
+          originalError: error,
+          userMessage: 'The specified database does not exist on the PostgreSQL server.',
+          technicalMessage: `PostgreSQL database not found: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_NAME environment variable is correct',
+            'Create the database on the PostgreSQL server',
+            'Check if you have permission to access the database',
+            'Verify the database name spelling and case sensitivity'
+          ],
+          isRetryable: false
+        };
+
+      case 'ECONNREFUSED':
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'Cannot connect to the PostgreSQL server. The server may be down or unreachable.',
+          technicalMessage: `PostgreSQL connection refused: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify PostgreSQL server is running',
+            'Check DATABASE_HOST and DATABASE_PORT environment variables',
+            'Verify network connectivity to the PostgreSQL server',
+            'Check firewall settings and port accessibility',
+            'Ensure PostgreSQL is listening on the specified port',
+            'Verify SSL configuration for cloud providers'
+          ],
+          isRetryable: true
+        };
+
+      case 'ENOTFOUND':
+        return {
+          type: DatabaseErrorType.NETWORK_ERROR,
+          originalError: error,
+          userMessage: 'Cannot resolve the PostgreSQL server hostname.',
+          technicalMessage: `PostgreSQL hostname resolution failed: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_HOST environment variable is correct',
+            'Check DNS resolution for the hostname',
+            'Try using an IP address instead of hostname',
+            'Verify network connectivity'
+          ],
+          isRetryable: true
+        };
+
+      case 'ETIMEDOUT':
+        return {
+          type: DatabaseErrorType.NETWORK_ERROR,
+          originalError: error,
+          userMessage: 'Connection to PostgreSQL server timed out.',
+          technicalMessage: `PostgreSQL connection timeout: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check network connectivity to PostgreSQL server',
+            'Verify firewall settings allow PostgreSQL connections',
+            'Increase connection timeout if needed',
+            'Check if PostgreSQL server is overloaded',
+            'Verify SSL configuration for cloud providers'
+          ],
+          isRetryable: true
+        };
+
+      case '53300':
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL server has too many connections.',
+          technicalMessage: `PostgreSQL connection limit exceeded: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Wait for existing connections to close',
+            'Increase PostgreSQL max_connections setting',
+            'Optimize application connection pooling',
+            'Check for connection leaks in the application',
+            'Consider using connection pooling services like Supabase'
+          ],
+          isRetryable: true
+        };
+
+      default:
+        return {
+          type: DatabaseErrorType.UNKNOWN_ERROR,
+          originalError: error,
+          userMessage: 'An unexpected PostgreSQL database error occurred.',
+          technicalMessage: `PostgreSQL error (${errorCode}): ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check PostgreSQL server logs for more details',
+            'Verify all PostgreSQL environment variables',
+            'Ensure PostgreSQL server is properly configured',
+            'Verify SSL configuration for cloud providers',
             'Contact your database administrator if the problem persists'
           ],
           isRetryable: false

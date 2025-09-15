@@ -189,9 +189,13 @@ describe('Database Configuration', () => {
       expect(validateDatabaseType('  ')).toBe('mysql');
     });
 
+    it('should return postgresql for valid postgresql type', () => {
+      expect(validateDatabaseType('postgresql')).toBe('postgresql');
+    });
+
     it('should throw error for unsupported database type', () => {
-      expect(() => validateDatabaseType('postgresql')).toThrow(
-        'Unsupported database type: "postgresql"'
+      expect(() => validateDatabaseType('oracle')).toThrow(
+        'Unsupported database type: "oracle"'
       );
     });
   });
@@ -210,9 +214,18 @@ describe('Database Configuration', () => {
       expect(() => validateDatabaseConfig('sqlite')).not.toThrow();
     });
 
+    it('should validate postgresql type', () => {
+      process.env.DATABASE_HOST = 'localhost';
+      process.env.DATABASE_USER = 'testuser';
+      process.env.DATABASE_PASSWORD = 'testpass';
+      process.env.DATABASE_NAME = 'testdb';
+
+      expect(() => validateDatabaseConfig('postgresql')).not.toThrow();
+    });
+
     it('should throw error for unsupported database type', () => {
-      expect(() => validateDatabaseConfig('postgresql')).toThrow(
-        'Unsupported database type: "postgresql"'
+      expect(() => validateDatabaseConfig('oracle')).toThrow(
+        'Unsupported database type: "oracle"'
       );
     });
 
