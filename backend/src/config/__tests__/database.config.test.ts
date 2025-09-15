@@ -2,10 +2,12 @@ import {
   createDatabaseConfig,
   createMySqlConfig,
   createSqliteConfig,
+  createPostgreSqlConfig,
   validateDatabaseConfig,
   validateDatabaseType,
   MySqlConfig,
   SqliteConfig,
+  PostgreSqlConfig,
 } from '../database.config';
 import * as fs from 'fs';
 
@@ -170,6 +172,80 @@ describe('Database Configuration', () => {
     });
   });
 
+  describe('createPostgreSqlConfig', () => {
+    beforeEach(() => {
+      process.env.DATABASE_HOST = 'localhost';
+      process.env.DATABASE_USER = 'testuser';
+      process.env.DATABASE_PASSWORD = 'testpass';
+      process.env.DATABASE_NAME = 'testdb';
+      process.env.DATABASE_PORT = '5432';
+    });
+
+    it('should create PostgreSQL configuration with environment variables', () => {
+      const config = createPostgreSqlConfig() as PostgreSqlConfig;
+
+      expect(config.type).toBe('postgres');
+      expect(config.host).toBe('localhost');
+      expect(config.username).toBe('testuser');
+      expect(config.password).toBe('testpass');
+      expect(config.database).toBe('testdb');
+      expect(config.port).toBe(5432);
+      expect(config.entities).toBeDefined();
+      expect(config.synchronize).toBe(true); // Should be true in test environment
+      expect(config.logging).toEqual(['error', 'warn']);
+      expect(config.ssl).toBe(false); // Should be false in non-production
+      expect(config.retryAttempts).toBe(3);
+      expect(config.retryDelay).toBe(1000);
+    });
+
+    it('should use default values when optional environment variables are not set', () => {
+      delete process.env.DATABASE_HOST;
+      delete process.env.DATABASE_PORT;
+
+      const config = createPostgreSqlConfig() as PostgreSqlConfig;
+
+      expect(config.host).toBe('localhost');
+      expect(config.port).toBe(5432); // PostgreSQL default port
+      expect(config.username).toBe('testuser');
+      expect(config.password).toBe('testpass');
+      expect(config.database).toBe('testdb');
+    });
+
+    it('should set SSL for production environment', () => {
+      process.env.NODE_ENV = 'production';
+
+      const config = createPostgreSqlConfig() as PostgreSqlConfig;
+
+      expect(config.ssl).toEqual({ rejectUnauthorized: false });
+    });
+
+    it('should throw error when required PostgreSQL variables are missing', () => {
+      delete process.env.DATABASE_USER;
+      delete process.env.DATABASE_PASSWORD;
+      delete process.env.DATABASE_NAME;
+
+      expect(() => createPostgreSqlConfig()).toThrow(
+        'PostgreSQL configuration validation failed'
+      );
+    });
+
+    it('should throw error with invalid port number', () => {
+      process.env.DATABASE_PORT = 'invalid';
+
+      expect(() => createPostgreSqlConfig()).toThrow(
+        'DATABASE_PORT must be a valid port number'
+      );
+    });
+
+    it('should throw error with invalid database name format', () => {
+      process.env.DATABASE_NAME = 'invalid-name!';
+
+      expect(() => createPostgreSqlConfig()).toThrow(
+        'DATABASE_NAME can only contain letters, numbers, and underscores'
+      );
+    });
+  });
+
   describe('validateDatabaseType', () => {
     it('should return mysql for valid mysql type', () => {
       expect(validateDatabaseType('mysql')).toBe('mysql');
@@ -189,10 +265,12 @@ describe('Database Configuration', () => {
       expect(validateDatabaseType('  ')).toBe('mysql');
     });
 
-    it('should return postgresql for valid postgresql type', () => {
-      expect(validateDatabaseType('postgresql')).toBe('postgresql');
-      expect(validateDatabaseType('POSTGRESQL')).toBe('postgresql');
-      expect(validateDatabaseType(' postgresql ')).toBe('postgresql');
+    it('should return postgres for valid postgresql type', () => {
+      expect(validateDatabaseType('postgresql')).toBe('postgres');
+      expect(validateDatabaseType('POSTGRESQL')).toBe('postgres');
+      expect(validateDatabaseType(' postgresql ')).toBe('postgres');
+      expect(validateDatabaseType('postgres')).toBe('postgres');
+      expect(validateDatabaseType('POSTGRES')).toBe('postgres');
     });
 
     it('should throw error for unsupported database type', () => {
@@ -286,6 +364,23 @@ describe('Database Configuration', () => {
       const config = createDatabaseConfig();
 
       expect(config.type).toBe('sqlite');
+    });
+
+    it('should create PostgreSQL configuration when DATABASE_TYPE is postgresql', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+      process.env.DATABASE_HOST = 'localhost';
+      process.env.DATABASE_USER = 'testuser';
+      process.env.DATABASE_PASSWORD = 'testpass';
+      process.env.DATABASE_NAME = 'testdb';
+      process.env.DATABASE_PORT = '5432';
+
+      const config = createDatabaseConfig() as PostgreSqlConfig;
+
+      expect(config.type).toBe('postgres');
+      expect(config.host).toBe('localhost');
+      expect(config.port).toBe(5432);
+      expect(config.username).toBe('testuser');
+      expect(config.database).toBe('testdb');
     });
   });
 });
