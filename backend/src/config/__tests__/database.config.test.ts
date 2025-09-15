@@ -191,6 +191,8 @@ describe('Database Configuration', () => {
 
     it('should return postgresql for valid postgresql type', () => {
       expect(validateDatabaseType('postgresql')).toBe('postgresql');
+      expect(validateDatabaseType('POSTGRESQL')).toBe('postgresql');
+      expect(validateDatabaseType(' postgresql ')).toBe('postgresql');
     });
 
     it('should throw error for unsupported database type', () => {

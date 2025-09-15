@@ -234,6 +234,10 @@ export function validateDatabaseConfig(type: string): void {
       validateMySqlConfig();
     } else if (validatedType === 'sqlite') {
       validateSqliteConfig();
+    } else if (validatedType === 'postgresql') {
+      // PostgreSQL validation will be implemented in a future task
+      // For now, we accept postgresql as a valid type but don't validate its config
+      return;
     }
   } catch (error) {
     throw new Error(
