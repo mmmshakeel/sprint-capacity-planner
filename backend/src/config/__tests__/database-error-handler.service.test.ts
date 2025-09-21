@@ -300,6 +300,257 @@ describe('DatabaseErrorHandlerService', () => {
     });
   });
 
+  describe('PostgreSQL Error Handling', () => {
+    it('should handle 28P01 authentication error correctly', () => {
+      const error = {
+        code: '28P01',
+        message: 'password authentication failed for user "postgres"'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('PostgreSQL authentication failed');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Verify you are using the correct project password');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle 28000 invalid authorization error correctly', () => {
+      const error = {
+        code: '28000',
+        message: 'invalid authorization specification'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('authentication method not supported');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Ensure SSL is enabled in production');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle 3D000 database not found error correctly', () => {
+      const error = {
+        code: '3D000',
+        message: 'database "nonexistent" does not exist'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.DATABASE_NOT_FOUND);
+      expect(result.userMessage).toContain('database does not exist');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Use "postgres" as the database name');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle ECONNREFUSED correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ECONNREFUSED',
+        message: 'connect ECONNREFUSED 127.0.0.1:5432'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('Cannot connect to the PostgreSQL server');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Verify the project URL is correct (db.xxx.supabase.co)');
+      expect(result.troubleshootingSteps).toContain('Ensure PostgreSQL is listening on the specified port (default: 5432)');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle ENOTFOUND correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ENOTFOUND',
+        message: 'getaddrinfo ENOTFOUND db.example.supabase.co'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.NETWORK_ERROR);
+      expect(result.userMessage).toContain('Cannot resolve the PostgreSQL server hostname');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Ensure the project URL format is correct (db.xxx.supabase.co)');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle ETIMEDOUT correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ETIMEDOUT',
+        message: 'connect ETIMEDOUT'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.NETWORK_ERROR);
+      expect(result.userMessage).toContain('Connection to PostgreSQL server timed out');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Check project status and region connectivity');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle 53300 too many connections error correctly', () => {
+      const error = {
+        code: '53300',
+        message: 'sorry, too many clients already'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('too many connections');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Consider upgrading to a higher tier for more connections');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle 08006 connection failure error correctly', () => {
+      const error = {
+        code: '08006',
+        message: 'connection failure'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('connection failure during communication');
+      expect(result.troubleshootingSteps).toContain('For cloud providers: Ensure SSL certificates are valid');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle 08001 connection rejected error correctly', () => {
+      const error = {
+        code: '08001',
+        message: 'server rejected the connection'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('server rejected the connection attempt');
+      expect(result.troubleshootingSteps).toContain('For cloud providers: Check if SSL is required but not configured');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle unknown PostgreSQL errors', () => {
+      const error = {
+        code: 'XX000',
+        message: 'Unknown PostgreSQL error'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.UNKNOWN_ERROR);
+      expect(result.userMessage).toContain('unexpected PostgreSQL database error');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Check project status and settings');
+      expect(result.isRetryable).toBe(false);
+    });
+  });
+
+  describe('PostgreSQL SSL Error Handling', () => {
+    it('should handle SSL connection errors', () => {
+      const error = {
+        message: 'SSL connection error: unable to get local issuer certificate'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('SSL/TLS connection error');
+      expect(result.troubleshootingSteps).toContain('For Supabase: Ensure SSL is enabled (required for all connections)');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle self-signed certificate errors', () => {
+      const error = {
+        message: 'self signed certificate in certificate chain'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('SSL certificate verification failed');
+      expect(result.troubleshootingSteps).toContain('For Supabase: SSL is automatically configured, ensure rejectUnauthorized is false');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle certificate verification failed errors', () => {
+      const error = {
+        message: 'certificate verify failed: unable to verify the first certificate'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('SSL certificate verification failed');
+      expect(result.troubleshootingSteps).toContain('For cloud providers: Use SSL mode "require" instead of "verify-full"');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle pg_hba.conf entry errors', () => {
+      const error = {
+        message: 'no pg_hba.conf entry for host "192.168.1.1", user "postgres", database "postgres", SSL off'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('server rejected the connection due to authentication configuration');
+      expect(result.troubleshootingSteps).toContain('For Supabase: SSL connections are required, verify SSL is configured');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle TLS handshake errors', () => {
+      const error = {
+        message: 'TLS handshake failed'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('SSL/TLS connection error');
+      expect(result.troubleshootingSteps).toContain('Check if the server supports the SSL/TLS version being used');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle generic SSL configuration errors', () => {
+      const error = {
+        message: 'sslmode value "invalid" invalid when SSL support is not compiled in'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('SSL/TLS configuration error');
+      expect(result.troubleshootingSteps).toContain('For cloud providers like Supabase: Ensure SSL is enabled');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should identify SSL errors correctly', () => {
+      const sslErrors = [
+        { message: 'SSL connection error', expectedType: DatabaseErrorType.CONNECTION_FAILED },
+        { message: 'TLS handshake failed', expectedType: DatabaseErrorType.CONNECTION_FAILED },
+        { message: 'certificate verify failed', expectedType: DatabaseErrorType.CONNECTION_FAILED },
+        { message: 'self signed certificate', expectedType: DatabaseErrorType.CONNECTION_FAILED },
+        { message: 'no pg_hba.conf entry', expectedType: DatabaseErrorType.AUTHENTICATION_FAILED },
+        { message: 'sslmode configuration error', expectedType: DatabaseErrorType.CONNECTION_FAILED }
+      ];
+
+      sslErrors.forEach(error => {
+        const result = service.handleDatabaseError(error, 'postgresql');
+        expect(result.type).toBe(error.expectedType);
+        expect(result.userMessage).toMatch(/SSL|TLS|certificate|authentication configuration/);
+      });
+    });
+
+    it('should not identify non-SSL errors as SSL errors', () => {
+      const nonSslError = {
+        code: '28P01',
+        message: 'password authentication failed for user "postgres"'
+      };
+
+      const result = service.handleDatabaseError(nonSslError, 'postgresql');
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('PostgreSQL authentication failed');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle errors without code property', () => {
       const error = {
@@ -328,6 +579,35 @@ describe('DatabaseErrorHandlerService', () => {
 
       expect(result.type).toBe(DatabaseErrorType.UNKNOWN_ERROR);
       expect(result.userMessage).toContain('unexpected database error');
+    });
+
+    it('should handle null or undefined PostgreSQL errors', () => {
+      const result = service.handleDatabaseError(null, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.UNKNOWN_ERROR);
+      expect(result.userMessage).toContain('unexpected database error');
+    });
+
+    it('should handle PostgreSQL errors without code property', () => {
+      const error = {
+        message: 'Some PostgreSQL error'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.UNKNOWN_ERROR);
+      expect(result.userMessage).toContain('unexpected PostgreSQL database error');
+    });
+
+    it('should handle PostgreSQL errors without message property', () => {
+      const error = {
+        code: '28P01'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgresql');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.technicalMessage).toContain('Unknown PostgreSQL error');
     });
   });
 });

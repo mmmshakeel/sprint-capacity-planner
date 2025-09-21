@@ -179,6 +179,11 @@ export class DatabaseErrorHandlerService {
     const errorCode = error.code || error.errno;
     const errorMessage = error.message || 'Unknown PostgreSQL error';
 
+    // Check for SSL-related errors first
+    if (this.isSSLError(error)) {
+      return this.handlePostgreSQLSSLError(error);
+    }
+
     switch (errorCode) {
       case '28P01':
         return {
@@ -191,7 +196,23 @@ export class DatabaseErrorHandlerService {
             'Verify DATABASE_PASSWORD environment variable is correct',
             'Ensure the PostgreSQL user has proper permissions',
             'Check if the PostgreSQL user account is not locked or expired',
-            'Verify SSL configuration for cloud providers like Supabase'
+            'For Supabase: Verify you are using the correct project password',
+            'For cloud providers: Ensure SSL is properly configured'
+          ],
+          isRetryable: false
+        };
+
+      case '28000':
+        return {
+          type: DatabaseErrorType.AUTHENTICATION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL authentication method not supported or invalid.',
+          technicalMessage: `PostgreSQL invalid authorization specification: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check if the authentication method is supported',
+            'Verify SSL configuration for cloud providers',
+            'For Supabase: Ensure SSL is enabled in production',
+            'Check PostgreSQL server authentication settings'
           ],
           isRetryable: false
         };
@@ -206,7 +227,8 @@ export class DatabaseErrorHandlerService {
             'Verify DATABASE_NAME environment variable is correct',
             'Create the database on the PostgreSQL server',
             'Check if you have permission to access the database',
-            'Verify the database name spelling and case sensitivity'
+            'Verify the database name spelling and case sensitivity',
+            'For Supabase: Use "postgres" as the database name'
           ],
           isRetryable: false
         };
@@ -222,8 +244,9 @@ export class DatabaseErrorHandlerService {
             'Check DATABASE_HOST and DATABASE_PORT environment variables',
             'Verify network connectivity to the PostgreSQL server',
             'Check firewall settings and port accessibility',
-            'Ensure PostgreSQL is listening on the specified port',
-            'Verify SSL configuration for cloud providers'
+            'Ensure PostgreSQL is listening on the specified port (default: 5432)',
+            'For Supabase: Verify the project URL is correct (db.xxx.supabase.co)',
+            'For cloud providers: Ensure SSL is enabled'
           ],
           isRetryable: true
         };
@@ -237,6 +260,7 @@ export class DatabaseErrorHandlerService {
           troubleshootingSteps: [
             'Verify DATABASE_HOST environment variable is correct',
             'Check DNS resolution for the hostname',
+            'For Supabase: Ensure the project URL format is correct (db.xxx.supabase.co)',
             'Try using an IP address instead of hostname',
             'Verify network connectivity'
           ],
@@ -254,7 +278,8 @@ export class DatabaseErrorHandlerService {
             'Verify firewall settings allow PostgreSQL connections',
             'Increase connection timeout if needed',
             'Check if PostgreSQL server is overloaded',
-            'Verify SSL configuration for cloud providers'
+            'For cloud providers: Verify SSL handshake is completing',
+            'For Supabase: Check project status and region connectivity'
           ],
           isRetryable: true
         };
@@ -270,7 +295,40 @@ export class DatabaseErrorHandlerService {
             'Increase PostgreSQL max_connections setting',
             'Optimize application connection pooling',
             'Check for connection leaks in the application',
-            'Consider using connection pooling services like Supabase'
+            'For Supabase: Consider upgrading to a higher tier for more connections',
+            'Use connection pooling services like PgBouncer'
+          ],
+          isRetryable: true
+        };
+
+      case '08006':
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL connection failure during communication.',
+          technicalMessage: `PostgreSQL connection failure: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check network stability and connectivity',
+            'Verify SSL configuration is correct',
+            'For cloud providers: Ensure SSL certificates are valid',
+            'Check for intermittent network issues',
+            'Verify connection parameters are correct'
+          ],
+          isRetryable: true
+        };
+
+      case '08001':
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL server rejected the connection attempt.',
+          technicalMessage: `PostgreSQL connection rejected: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check if PostgreSQL server is accepting connections',
+            'Verify connection limits have not been exceeded',
+            'For cloud providers: Check if SSL is required but not configured',
+            'Verify authentication credentials are correct',
+            'Check PostgreSQL server configuration'
           ],
           isRetryable: true
         };
@@ -285,12 +343,102 @@ export class DatabaseErrorHandlerService {
             'Check PostgreSQL server logs for more details',
             'Verify all PostgreSQL environment variables',
             'Ensure PostgreSQL server is properly configured',
-            'Verify SSL configuration for cloud providers',
+            'For cloud providers: Verify SSL configuration',
+            'For Supabase: Check project status and settings',
             'Contact your database administrator if the problem persists'
           ],
           isRetryable: false
         };
     }
+  }
+
+  /**
+   * Handles SSL-related PostgreSQL errors
+   */
+  private handlePostgreSQLSSLError(error: any): DatabaseError {
+    const errorMessage = error.message || 'Unknown SSL error';
+    
+    if (errorMessage.includes('self signed certificate') || errorMessage.includes('certificate verify failed')) {
+      return {
+        type: DatabaseErrorType.CONNECTION_FAILED,
+        originalError: error,
+        userMessage: 'SSL certificate verification failed for PostgreSQL connection.',
+        technicalMessage: `PostgreSQL SSL certificate error: ${errorMessage}`,
+        troubleshootingSteps: [
+          'For cloud providers: Use SSL mode "require" instead of "verify-full"',
+          'For Supabase: SSL is automatically configured, ensure rejectUnauthorized is false',
+          'Check if you need to provide custom SSL certificates',
+          'Verify the server certificate is trusted',
+          'For development: Consider using SSL mode "prefer" or "require"'
+        ],
+        isRetryable: false
+      };
+    }
+
+    if (errorMessage.includes('no pg_hba.conf entry')) {
+      return {
+        type: DatabaseErrorType.AUTHENTICATION_FAILED,
+        originalError: error,
+        userMessage: 'PostgreSQL server rejected the connection due to authentication configuration.',
+        technicalMessage: `PostgreSQL pg_hba.conf error: ${errorMessage}`,
+        troubleshootingSteps: [
+          'Check PostgreSQL server pg_hba.conf configuration',
+          'Verify the connection method (SSL/non-SSL) is allowed',
+          'For cloud providers: Ensure you are connecting with SSL enabled',
+          'For Supabase: SSL connections are required, verify SSL is configured',
+          'Check if your IP address is allowed to connect'
+        ],
+        isRetryable: false
+      };
+    }
+
+    if (errorMessage.toLowerCase().includes('sslmode')) {
+      return {
+        type: DatabaseErrorType.CONNECTION_FAILED,
+        originalError: error,
+        userMessage: 'SSL/TLS configuration error when connecting to PostgreSQL.',
+        technicalMessage: `PostgreSQL SSL configuration error: ${errorMessage}`,
+        troubleshootingSteps: [
+          'Verify SSL configuration in database connection settings',
+          'For cloud providers like Supabase: Ensure SSL is enabled',
+          'Check SSL mode configuration (require, prefer, verify-full)',
+          'Verify SSL certificates and authentication',
+          'Check network connectivity and firewall settings'
+        ],
+        isRetryable: false
+      };
+    }
+
+    // Generic SSL/TLS error
+    return {
+      type: DatabaseErrorType.CONNECTION_FAILED,
+      originalError: error,
+      userMessage: 'SSL/TLS connection error when connecting to PostgreSQL server.',
+      technicalMessage: `PostgreSQL SSL error: ${errorMessage}`,
+      troubleshootingSteps: [
+        'Verify SSL is properly configured in the database connection',
+        'For Supabase: Ensure SSL is enabled (required for all connections)',
+        'Check if SSL certificates are valid and not expired',
+        'Verify the SSL mode is appropriate for your environment',
+        'For production: Use SSL mode "require" or "verify-full"',
+        'For development: You may use "prefer" or "require"',
+        'Check if the server supports the SSL/TLS version being used'
+      ],
+      isRetryable: false
+    };
+  }
+
+  /**
+   * Determines if an error is SSL-related
+   */
+  private isSSLError(error: any): boolean {
+    const errorMessage = (error.message || '').toLowerCase();
+    const sslKeywords = [
+      'ssl', 'tls', 'certificate', 'handshake', 'cipher', 'protocol',
+      'self signed', 'verify failed', 'pg_hba.conf', 'sslmode'
+    ];
+    
+    return sslKeywords.some(keyword => errorMessage.includes(keyword));
   }
 
   /**
