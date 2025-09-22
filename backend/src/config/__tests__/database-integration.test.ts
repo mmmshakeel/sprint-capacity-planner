@@ -30,6 +30,23 @@ describe('Database Integration Tests', () => {
       expect((config as any).database).toBe('testdb');
     });
 
+    it('should create PostgreSQL configuration successfully with valid environment', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+      process.env.DATABASE_HOST = 'db.example.supabase.co';
+      process.env.DATABASE_PORT = '5432';
+      process.env.DATABASE_USER = 'postgres';
+      process.env.DATABASE_PASSWORD = 'testpass';
+      process.env.DATABASE_NAME = 'postgres';
+
+      const config = createDatabaseConfig();
+
+      expect(config.type).toBe('postgres');
+      expect((config as any).host).toBe('db.example.supabase.co');
+      expect((config as any).port).toBe(5432);
+      expect((config as any).username).toBe('postgres');
+      expect((config as any).database).toBe('postgres');
+    });
+
     it('should create SQLite configuration successfully with valid environment', () => {
       process.env.DATABASE_TYPE = 'sqlite';
       process.env.DATABASE_PATH = './test-data/test.sqlite';
@@ -61,6 +78,15 @@ describe('Database Integration Tests', () => {
       expect(() => createDatabaseConfig()).toThrow(/Troubleshooting Steps/);
     });
 
+    it('should throw enhanced error for invalid PostgreSQL configuration', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+      // Missing required environment variables
+
+      expect(() => createDatabaseConfig()).toThrow(/Database configuration failed/);
+      expect(() => createDatabaseConfig()).toThrow(/Missing required PostgreSQL environment variables/);
+      expect(() => createDatabaseConfig()).toThrow(/Troubleshooting Steps/);
+    });
+
     it('should throw enhanced error for invalid SQLite configuration', () => {
       process.env.DATABASE_TYPE = 'sqlite';
       process.env.DATABASE_PATH = '../invalid/path.sqlite'; // Contains .. which is not allowed
@@ -74,7 +100,7 @@ describe('Database Integration Tests', () => {
       process.env.DATABASE_TYPE = 'oracle';
 
       expect(() => createDatabaseConfig()).toThrow(/Unsupported database type/);
-      expect(() => createDatabaseConfig()).toThrow(/Supported types are/);
+      expect(() => createDatabaseConfig()).toThrow(/Supported types are: "mysql", "sqlite", "postgresql"/);
       expect(() => createDatabaseConfig()).toThrow(/Please set DATABASE_TYPE environment variable/);
     });
   });
@@ -89,6 +115,20 @@ describe('Database Integration Tests', () => {
         createDatabaseConfig();
       } catch (error) {
         expect(error.message).toContain('DATABASE_TYPE: mysql');
+        expect(error.message).toContain('DATABASE_HOST: testhost');
+        expect(error.message).toContain('DATABASE_NAME: testdb');
+      }
+    });
+
+    it('should include PostgreSQL context in error messages', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+      process.env.DATABASE_HOST = 'testhost';
+      process.env.DATABASE_NAME = 'testdb';
+
+      try {
+        createDatabaseConfig();
+      } catch (error) {
+        expect(error.message).toContain('DATABASE_TYPE: postgresql');
         expect(error.message).toContain('DATABASE_HOST: testhost');
         expect(error.message).toContain('DATABASE_NAME: testdb');
       }
@@ -134,6 +174,19 @@ describe('Database Integration Tests', () => {
       process.env.DATABASE_USER = 'testuser';
       process.env.DATABASE_PASSWORD = 'testpass';
       process.env.DATABASE_NAME = 'testdb';
+
+      createDatabaseConfig();
+
+      // The logging happens through NestJS Logger, so we can't easily test console output
+      // But we can verify the configuration was created successfully
+      expect(true).toBe(true); // Configuration creation succeeded
+    });
+
+    it('should log database selection for PostgreSQL', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+      process.env.DATABASE_USER = 'postgres';
+      process.env.DATABASE_PASSWORD = 'testpass';
+      process.env.DATABASE_NAME = 'postgres';
 
       createDatabaseConfig();
 
