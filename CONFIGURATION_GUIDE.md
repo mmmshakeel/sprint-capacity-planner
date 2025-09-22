@@ -4,9 +4,10 @@ Complete guide for configuring the Sprint Capacity Planner with different databa
 
 ## Overview
 
-The Sprint Capacity Planner supports two database configurations:
+The Sprint Capacity Planner supports three database configurations:
 - **SQLite** - File-based database, ideal for development
 - **MySQL** - Server-based database, recommended for production
+- **PostgreSQL** - Advanced server-based database, excellent for production, works seamlessly with Supabase
 
 ## Quick Start
 
@@ -16,6 +17,7 @@ The Sprint Capacity Planner supports two database configurations:
 |----------|----------|------------------|----------------------|
 | SQLite | Development, Testing | Low | None |
 | MySQL | Production, Team Development | Medium | MySQL Server |
+| PostgreSQL | Production, Supabase Integration | Medium | PostgreSQL Server or Supabase |
 
 ### 2. Configuration Files
 
@@ -114,19 +116,101 @@ DATABASE_PASSWORD=your_secure_password
 DATABASE_NAME=your_database
 ```
 
+## PostgreSQL Configuration
+
+### Environment Variables
+
+```bash
+# backend/.env
+DATABASE_TYPE=postgresql
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+```
+
+### Setup Options
+
+#### Option 1: Docker (Recommended for Development)
+```bash
+# Start PostgreSQL container
+docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+
+# Use these credentials in .env:
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+```
+
+#### Option 2: Local PostgreSQL Server
+```bash
+# Install PostgreSQL (varies by OS)
+# Create database and user:
+
+psql -U postgres
+CREATE DATABASE sprint_planner;
+CREATE USER app_user WITH PASSWORD 'secure_password';
+GRANT ALL PRIVILEGES ON DATABASE sprint_planner TO app_user;
+```
+
+#### Option 3: Supabase (Recommended for Production)
+```bash
+# Get connection details from your Supabase project dashboard
+DATABASE_HOST=db.xxx.supabase.co
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your-supabase-password
+DATABASE_NAME=postgres
+```
+
+### Supabase Setup Guide
+
+1. **Create Supabase Project:**
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Note your project URL and API keys
+
+2. **Get Database Connection Details:**
+   - Go to Settings > Database
+   - Copy the connection details:
+     - Host: `db.xxx.supabase.co`
+     - Port: `5432`
+     - Database: `postgres`
+     - Username: `postgres`
+     - Password: Your project password
+
+3. **Configure Environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=db.xxx.supabase.co
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=your-supabase-password
+   DATABASE_NAME=postgres
+   ```
+
+4. **SSL Configuration:**
+   - SSL is automatically enabled in production (`NODE_ENV=production`)
+   - Supabase requires SSL connections
+   - No additional SSL configuration needed
+
 ## Environment Variables Reference
 
 ### Database Configuration
 
-| Variable | SQLite | MySQL | Description | Default |
-|----------|--------|-------|-------------|---------|
-| `DATABASE_TYPE` | ✅ | ✅ | Database type: 'sqlite' or 'mysql' | `mysql` |
-| `DATABASE_PATH` | ✅ | ❌ | SQLite file path | `./data/database.sqlite` |
-| `DATABASE_HOST` | ❌ | ✅ | MySQL server hostname | `localhost` |
-| `DATABASE_PORT` | ❌ | ✅ | MySQL server port | `3306` |
-| `DATABASE_USER` | ❌ | ✅ | MySQL username | - |
-| `DATABASE_PASSWORD` | ❌ | ✅ | MySQL password | - |
-| `DATABASE_NAME` | ❌ | ✅ | MySQL database name | - |
+| Variable | SQLite | MySQL | PostgreSQL | Description | Default |
+|----------|--------|-------|------------|-------------|---------|
+| `DATABASE_TYPE` | ✅ | ✅ | ✅ | Database type: 'sqlite', 'mysql', or 'postgresql' | `mysql` |
+| `DATABASE_PATH` | ✅ | ❌ | ❌ | SQLite file path | `./data/database.sqlite` |
+| `DATABASE_HOST` | ❌ | ✅ | ✅ | Database server hostname | `localhost` |
+| `DATABASE_PORT` | ❌ | ✅ | ✅ | Database server port | `3306` (MySQL), `5432` (PostgreSQL) |
+| `DATABASE_USER` | ❌ | ✅ | ✅ | Database username | - |
+| `DATABASE_PASSWORD` | ❌ | ✅ | ✅ | Database password | - |
+| `DATABASE_NAME` | ❌ | ✅ | ✅ | Database name | - |
 
 ### Application Configuration
 
@@ -176,6 +260,34 @@ PORT=3300
 FRONTEND_URL=https://your-app.com
 ```
 
+### Development with PostgreSQL
+```bash
+# backend/.env
+NODE_ENV=development
+DATABASE_TYPE=postgresql
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+PORT=3300
+FRONTEND_URL=http://localhost:3000
+```
+
+### Production with Supabase
+```bash
+# backend/.env
+NODE_ENV=production
+DATABASE_TYPE=postgresql
+DATABASE_HOST=db.xxx.supabase.co
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your-supabase-password
+DATABASE_NAME=postgres
+PORT=3300
+FRONTEND_URL=https://your-app.com
+```
+
 ## Switching Between Databases
 
 ### From MySQL to SQLite
@@ -211,6 +323,43 @@ FRONTEND_URL=https://your-app.com
    DATABASE_NAME=your_database
    ```
 4. **Restart application:**
+   ```bash
+   npm run start:dev
+   ```
+
+### From SQLite to PostgreSQL
+
+1. **Start PostgreSQL server** (Docker, local, or Supabase)
+2. **Create database** in PostgreSQL (if using local)
+3. **Update configuration:**
+   ```bash
+   # In backend/.env
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=localhost  # or db.xxx.supabase.co for Supabase
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=your_password
+   DATABASE_NAME=postgres
+   ```
+4. **Restart application:**
+   ```bash
+   npm run start:dev
+   ```
+
+### Between MySQL and PostgreSQL
+
+1. **Update database type and port:**
+   ```bash
+   # For PostgreSQL
+   DATABASE_TYPE=postgresql
+   DATABASE_PORT=5432
+   
+   # For MySQL
+   DATABASE_TYPE=mysql
+   DATABASE_PORT=3306
+   ```
+2. **Update other connection details as needed**
+3. **Restart application:**
    ```bash
    npm run start:dev
    ```
@@ -284,8 +433,12 @@ curl http://localhost:3300/api/team-members
 | `ECONNREFUSED` | MySQL | `docker-compose up -d mysql` |
 | `ER_ACCESS_DENIED_ERROR` | MySQL | Check credentials in `.env` |
 | `ER_BAD_DB_ERROR` | MySQL | Create database in MySQL |
-| Port in use | Both | Change `PORT` in `.env` |
-| CORS errors | Both | Check `FRONTEND_URL` in `.env` |
+| `ECONNREFUSED` (PostgreSQL) | PostgreSQL | Start PostgreSQL server or check Supabase |
+| `password authentication failed` | PostgreSQL | Check PostgreSQL credentials |
+| `database does not exist` | PostgreSQL | Create database in PostgreSQL |
+| SSL connection errors | PostgreSQL | Check Supabase SSL requirements |
+| Port in use | All | Change `PORT` in `.env` |
+| CORS errors | All | Check `FRONTEND_URL` in `.env` |
 
 ### Getting Help
 
@@ -326,6 +479,12 @@ For detailed troubleshooting:
 - **Best for:** Production, multiple users, large datasets
 - **Benefits:** Concurrent access, advanced features, scalability
 - **Optimization:** Connection pooling, indexing, query optimization
+
+### PostgreSQL
+- **Best for:** Production, advanced features, Supabase integration
+- **Benefits:** Advanced SQL features, JSON support, excellent performance
+- **Optimization:** Built-in connection pooling, advanced indexing, query optimization
+- **Supabase:** Managed hosting, automatic backups, real-time features
 
 ## Next Steps
 
