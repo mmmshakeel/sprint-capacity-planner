@@ -78,6 +78,163 @@ This guide provides detailed solutions for common issues encountered when settin
    sqlite3 backend/data/database.sqlite ".schema"
    ```
 
+### PostgreSQL Configuration Problems
+
+#### Issue: Connection Refused (PostgreSQL)
+
+**Symptoms:**
+- Error: `ECONNREFUSED 127.0.0.1:5432`
+- Application cannot connect to PostgreSQL
+- Docker container not accessible
+
+**Causes:**
+- PostgreSQL server not running
+- Wrong host/port configuration
+- Docker networking issues
+- Supabase connection issues
+
+**Solutions:**
+
+1. **Check PostgreSQL container status:**
+   ```bash
+   docker ps | grep postgres
+   docker logs postgres-dev
+   ```
+
+2. **Start PostgreSQL container:**
+   ```bash
+   docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+   ```
+
+3. **Verify PostgreSQL is listening:**
+   ```bash
+   # Check if port is open
+   telnet localhost 5432
+   # OR
+   nc -zv localhost 5432
+   ```
+
+4. **For Supabase connections:**
+   ```bash
+   # Test Supabase connection
+   telnet db.xxx.supabase.co 5432
+   # Check Supabase project status in dashboard
+   ```
+
+#### Issue: Authentication Failed (PostgreSQL)
+
+**Symptoms:**
+- Error: `password authentication failed for user "postgres"`
+- Authentication failures
+- Wrong credentials
+
+**Causes:**
+- Incorrect username/password
+- User doesn't exist in PostgreSQL
+- Insufficient privileges
+- SSL configuration issues with Supabase
+
+**Solutions:**
+
+1. **Verify credentials in environment:**
+   ```bash
+   # Check backend/.env file
+   cat backend/.env | grep DATABASE_
+   ```
+
+2. **Connect to PostgreSQL directly:**
+   ```bash
+   # Using Docker
+   docker exec -it postgres-dev psql -U postgres
+   
+   # Using local PostgreSQL client
+   psql -h localhost -p 5432 -U postgres -d postgres
+   ```
+
+3. **For Supabase connections:**
+   ```bash
+   # Use connection string from Supabase dashboard
+   psql "postgresql://postgres:your-password@db.xxx.supabase.co:5432/postgres"
+   ```
+
+4. **Create user if needed:**
+   ```sql
+   -- Connect as postgres user
+   docker exec -it postgres-dev psql -U postgres
+   
+   -- Create user and grant privileges
+   CREATE USER app_user WITH PASSWORD 'secure_password';
+   CREATE DATABASE sprint_planner;
+   GRANT ALL PRIVILEGES ON DATABASE sprint_planner TO app_user;
+   ```
+
+#### Issue: Database Does Not Exist (PostgreSQL)
+
+**Symptoms:**
+- Error: `database "your_db" does not exist`
+- Database name not found
+- Application fails to start
+
+**Causes:**
+- Database not created in PostgreSQL
+- Wrong database name in configuration
+- Database was dropped
+
+**Solutions:**
+
+1. **Create database:**
+   ```sql
+   -- Connect to PostgreSQL
+   docker exec -it postgres-dev psql -U postgres
+   
+   -- Create database
+   CREATE DATABASE sprint_planner;
+   ```
+
+2. **Verify database name:**
+   ```bash
+   # Check environment configuration
+   grep DATABASE_NAME backend/.env
+   ```
+
+3. **List existing databases:**
+   ```sql
+   \l  -- In psql
+   -- OR
+   SELECT datname FROM pg_database;
+   ```
+
+#### Issue: SSL Connection Problems (Supabase)
+
+**Symptoms:**
+- SSL connection errors
+- Certificate verification failures
+- Connection timeouts with Supabase
+
+**Causes:**
+- SSL not properly configured
+- Wrong NODE_ENV setting
+- Network/firewall issues
+
+**Solutions:**
+
+1. **Ensure production environment:**
+   ```bash
+   # In backend/.env
+   NODE_ENV=production  # This enables SSL automatically
+   ```
+
+2. **Test SSL connection:**
+   ```bash
+   # Test SSL connection to Supabase
+   openssl s_client -connect db.xxx.supabase.co:5432 -starttls postgres
+   ```
+
+3. **Check Supabase project status:**
+   - Verify project is active in Supabase dashboard
+   - Check connection pooling settings
+   - Verify SSL is enabled (default for Supabase)
+
 ### MySQL Configuration Problems
 
 #### Issue: Connection Refused
@@ -271,6 +428,14 @@ This guide provides detailed solutions for common issues encountered when settin
    
    # Unset if needed
    unset DATABASE_TYPE
+   ```
+
+4. **Verify valid values:**
+   ```bash
+   # Valid values (case sensitive):
+   DATABASE_TYPE=mysql
+   DATABASE_TYPE=postgresql
+   DATABASE_TYPE=sqlite
    ```
 
 ## Application Startup Issues

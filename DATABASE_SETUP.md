@@ -52,6 +52,98 @@ backend/
 └── ...
 ```
 
+## PostgreSQL Setup
+
+### Prerequisites
+- Docker (for local PostgreSQL)
+- OR Supabase account (recommended)
+- OR local PostgreSQL server
+
+### Option 1: Using Supabase (Recommended for Production)
+
+1. **Create Supabase project:**
+   - Go to [supabase.com](https://supabase.com) and create account
+   - Create new project
+   - Wait for project to be ready
+
+2. **Get connection details:**
+   - Go to Settings > Database
+   - Copy connection info:
+     - Host: `db.xxx.supabase.co`
+     - Port: `5432`
+     - Database: `postgres`
+     - Username: `postgres`
+     - Password: Your project password
+
+3. **Configure environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=db.xxx.supabase.co
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=your-supabase-password
+   DATABASE_NAME=postgres
+   ```
+
+4. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
+### Option 2: Using Docker (Development)
+
+1. **Start PostgreSQL with Docker:**
+   ```bash
+   docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+   ```
+
+2. **Configure environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=postgres
+   DATABASE_NAME=postgres
+   ```
+
+3. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
+### Option 3: Local PostgreSQL Server
+
+1. **Install PostgreSQL locally** (varies by OS)
+
+2. **Create database and user:**
+   ```sql
+   CREATE DATABASE sprint_planner;
+   CREATE USER app_user WITH PASSWORD 'secure_password';
+   GRANT ALL PRIVILEGES ON DATABASE sprint_planner TO app_user;
+   ```
+
+3. **Configure environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_USER=app_user
+   DATABASE_PASSWORD=secure_password
+   DATABASE_NAME=sprint_planner
+   ```
+
+4. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
 ## MySQL Setup
 
 ### Prerequisites
@@ -129,6 +221,16 @@ DATABASE_PASSWORD=your_password
 DATABASE_NAME=your_database
 ```
 
+### Required for PostgreSQL
+```bash
+DATABASE_TYPE=postgresql
+DATABASE_HOST=localhost  # or db.xxx.supabase.co for Supabase
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=postgres
+```
+
 ### Optional (All Database Types)
 ```bash
 NODE_ENV=development
@@ -165,6 +267,23 @@ docker-compose up -d mysql
 npm run start:dev
 ```
 
+### Switch to PostgreSQL
+```bash
+# Update backend/.env
+DATABASE_TYPE=postgresql
+DATABASE_HOST=localhost  # or your Supabase host
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres  # or your Supabase password
+DATABASE_NAME=postgres
+
+# Start PostgreSQL (if using Docker)
+docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+
+# Restart application
+npm run start:dev
+```
+
 ### Reset SQLite Database
 ```bash
 # Stop application (Ctrl+C)
@@ -188,6 +307,10 @@ npm run start:dev | grep -i database
 | `SQLITE_CANTOPEN` | `mkdir -p backend/data` |
 | `ECONNREFUSED` (MySQL) | `docker-compose up -d mysql` |
 | `ER_ACCESS_DENIED_ERROR` | Check MySQL credentials in `.env` |
+| `ECONNREFUSED` (PostgreSQL) | Start PostgreSQL or check Supabase connection |
+| `password authentication failed` | Check PostgreSQL credentials in `.env` |
+| `database does not exist` | Create database in PostgreSQL |
+| SSL connection errors (Supabase) | Check `NODE_ENV=production` for SSL |
 | Port already in use | Change `PORT=3301` in `.env` |
 | Environment not loading | Restart app: `npm run start:dev` |
 | No sample data | Delete SQLite file and restart |
@@ -210,6 +333,15 @@ npm run start:dev | grep -i database
 - [ ] Application connects without errors
 - [ ] API health endpoint responds: `curl http://localhost:3300/api/health`
 
+### PostgreSQL Setup ✓
+- [ ] PostgreSQL server running (Docker, local, or Supabase)
+- [ ] Database created in PostgreSQL (if using local)
+- [ ] User has proper permissions (if using local)
+- [ ] `.env` file configured with PostgreSQL settings
+- [ ] SSL configured for production/Supabase
+- [ ] Application connects without errors
+- [ ] API health endpoint responds: `curl http://localhost:3300/api/health`
+
 ## Performance Notes
 
 ### SQLite
@@ -221,6 +353,12 @@ npm run start:dev | grep -i database
 - **Best for**: Production, multiple users, large datasets
 - **Benefits**: Better concurrency, advanced features, scalability
 - **Requirements**: Separate server process, more configuration
+
+### PostgreSQL
+- **Best for**: Production, advanced features, Supabase integration
+- **Benefits**: Advanced SQL features, JSON support, excellent performance
+- **Requirements**: Separate server process, or managed with Supabase
+- **Supabase**: Managed hosting, automatic backups, SSL included
 
 ## Next Steps
 

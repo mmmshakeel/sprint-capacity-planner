@@ -10,13 +10,15 @@ A full-stack application for planning and managing sprint capacity in agile team
 
 ## Database Support
 
-This application supports two database options:
+This application supports three database options:
 - **MySQL** - Recommended for production deployments
+- **PostgreSQL** - Excellent for production, works seamlessly with Supabase
 - **SQLite** - Ideal for local development and testing
 
 📚 **Documentation:**
-- [Configuration Guide](CONFIGURATION_GUIDE.md) - Complete setup guide for both databases
+- [Configuration Guide](CONFIGURATION_GUIDE.md) - Complete setup guide for all databases
 - [Database Setup](DATABASE_SETUP.md) - Quick reference for database configuration
+- [Supabase Setup](SUPABASE_SETUP.md) - Complete guide for Supabase PostgreSQL setup
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Detailed solutions for common issues
 
 ## Getting Started
@@ -102,19 +104,67 @@ The application will be available at:
 - Backend API: http://localhost:3300
 - MySQL database: localhost:3306
 
+### Development with PostgreSQL
+
+For PostgreSQL development (including Supabase):
+
+1. Set up PostgreSQL locally or use Supabase:
+   ```bash
+   # For local PostgreSQL with Docker
+   docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+   ```
+
+2. Configure environment for PostgreSQL:
+   ```bash
+   # In backend/.env file
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=postgres
+   DATABASE_NAME=postgres
+   ```
+
+3. For Supabase, use your project connection details:
+   ```bash
+   # In backend/.env file
+   DATABASE_TYPE=postgresql
+   DATABASE_HOST=db.xxx.supabase.co
+   DATABASE_PORT=5432
+   DATABASE_USER=postgres
+   DATABASE_PASSWORD=your-supabase-password
+   DATABASE_NAME=postgres
+   ```
+
+4. Validate your configuration (optional):
+   ```bash
+   cd backend && npm run check-config
+   ```
+
+5. Start the application:
+   ```bash
+   cd backend && npm run start:dev
+   cd frontend && npm run dev
+   ```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3300
+- PostgreSQL database: localhost:5432 (or Supabase)
+
 ## Environment Variables
 
 ### Database Configuration
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `DATABASE_TYPE` | Database type: `mysql` or `sqlite` | `mysql` | No |
+| `DATABASE_TYPE` | Database type: `mysql`, `postgresql`, or `sqlite` | `mysql` | No |
 | `DATABASE_PATH` | SQLite database file path | `./data/database.sqlite` | SQLite only |
-| `DATABASE_HOST` | MySQL server hostname | `localhost` | MySQL only |
-| `DATABASE_PORT` | MySQL server port | `3306` | MySQL only |
-| `DATABASE_USER` | MySQL username | - | MySQL only |
-| `DATABASE_PASSWORD` | MySQL password | - | MySQL only |
-| `DATABASE_NAME` | MySQL database name | - | MySQL only |
+| `DATABASE_HOST` | Database server hostname | `localhost` | MySQL/PostgreSQL only |
+| `DATABASE_PORT` | Database server port | `3306` (MySQL), `5432` (PostgreSQL) | MySQL/PostgreSQL only |
+| `DATABASE_USER` | Database username | - | MySQL/PostgreSQL only |
+| `DATABASE_PASSWORD` | Database password | - | MySQL/PostgreSQL only |
+| `DATABASE_NAME` | Database name | - | MySQL/PostgreSQL only |
 
 ### Application Configuration
 
@@ -174,6 +224,36 @@ PORT=3300
 FRONTEND_URL=https://your-frontend-domain.com
 ```
 
+### PostgreSQL Configuration (Development)
+
+```bash
+# backend/.env
+NODE_ENV=development
+DATABASE_TYPE=postgresql
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+PORT=3300
+FRONTEND_URL=http://localhost:3000
+```
+
+### Supabase Configuration (Production)
+
+```bash
+# backend/.env
+NODE_ENV=production
+DATABASE_TYPE=postgresql
+DATABASE_HOST=db.xxx.supabase.co
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your-supabase-password
+DATABASE_NAME=postgres
+PORT=3300
+FRONTEND_URL=https://your-frontend-domain.com
+```
+
 ## Sample Data
 
 When using SQLite, the application automatically populates sample data on first startup, including:
@@ -217,6 +297,27 @@ This sample data helps you get started quickly and test all application features
 **Problem**: `ER_BAD_DB_ERROR: Unknown database`
 - **Solution**: Create the database or verify `DATABASE_NAME`
 - **Fix**: Connect to MySQL and run `CREATE DATABASE your_database_name;`
+
+#### PostgreSQL Issues
+
+**Problem**: `ECONNREFUSED: Connection refused` (PostgreSQL)
+- **Solution**: Ensure PostgreSQL server is running
+- **Check**: `docker ps` to verify PostgreSQL container status
+- **Fix**: `docker run --name postgres-dev -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
+
+**Problem**: `password authentication failed for user "postgres"`
+- **Solution**: Verify PostgreSQL credentials in environment variables
+- **Check**: Ensure `DATABASE_USER` and `DATABASE_PASSWORD` are correct
+- **Fix**: Update credentials or reset PostgreSQL user password
+
+**Problem**: `database "your_db" does not exist`
+- **Solution**: Create the database or verify `DATABASE_NAME`
+- **Fix**: Connect to PostgreSQL and run `CREATE DATABASE your_database_name;`
+
+**Problem**: SSL connection issues with Supabase
+- **Solution**: Ensure SSL is properly configured for production
+- **Check**: Verify `NODE_ENV=production` enables SSL automatically
+- **Fix**: Check Supabase connection details and SSL requirements
 
 ### Environment Configuration Issues
 
@@ -274,6 +375,21 @@ This sample data helps you get started quickly and test all application features
 4. Restart the application - database schema will be created automatically
 5. Note: Data migration requires manual export/import or custom scripts
 
+### From SQLite to PostgreSQL
+
+1. Ensure PostgreSQL is running (via Docker, local installation, or Supabase)
+2. Create the database in PostgreSQL (if using local installation)
+3. Update `.env` file with PostgreSQL configuration
+4. Restart the application - database schema will be created automatically
+5. Note: Data migration requires manual export/import or custom scripts
+
+### Between MySQL and PostgreSQL
+
+1. Both databases use similar configuration patterns
+2. Update `DATABASE_TYPE` and `DATABASE_PORT` (3306 for MySQL, 5432 for PostgreSQL)
+3. Restart the application - database schema will be created automatically
+4. Note: Data migration requires manual export/import or custom scripts
+
 ## Configuration Validation
 
 The application includes a configuration validation script to help verify your setup:
@@ -300,8 +416,9 @@ Run this script whenever you change your database configuration or encounter set
 
 ### Production
 - Use MySQL or PostgreSQL for production deployments
+- PostgreSQL with Supabase provides managed hosting with automatic backups
 - Use environment variables for all configuration
-- Enable SSL/TLS for database connections
+- Enable SSL/TLS for database connections (automatic with Supabase)
 - Regular database backups and monitoring
 
 ### Security
