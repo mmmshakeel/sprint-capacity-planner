@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `sprint` (
   `capacity` INT NOT NULL DEFAULT 0,
   `projectedVelocity` INT NOT NULL DEFAULT 0,
   `completedVelocity` INT NOT NULL DEFAULT 0,
+  `velocityCommitment` INT NULL,
   `teamId` INT NULL,
   PRIMARY KEY (`id`),
   INDEX `fk_sprint_team_idx` (`teamId` ASC),
