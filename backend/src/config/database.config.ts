@@ -12,7 +12,7 @@ import * as fs from 'fs';
  * Base database configuration interface
  */
 export interface DatabaseConfig {
-  type: 'mysql' | 'sqlite';
+  type: 'mysql' | 'sqlite' | 'postgres';
   entities: any[];
   synchronize: boolean;
   logging: any;
@@ -39,6 +39,22 @@ export interface MySqlConfig extends DatabaseConfig {
 export interface SqliteConfig extends DatabaseConfig {
   type: 'sqlite';
   database: string; // File path for SQLite
+}
+
+/**
+ * PostgreSQL-specific database configuration interface
+ */
+export interface PostgreSqlConfig extends DatabaseConfig {
+  type: 'postgres';
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  ssl?: any;
+  retryAttempts?: number;
+  retryDelay?: number;
+  schema?: string;
 }
 
 /**
@@ -82,6 +98,61 @@ function validateMySqlConfig(): void {
     throw new Error(
       `MySQL configuration validation failed:\n  - ${errors.join('\n  - ')}\n\n` +
       'Please check your environment variables and ensure all required MySQL settings are properly configured.'
+    );
+  }
+}
+
+/**
+ * Validates PostgreSQL configuration environment variables
+ */
+function validatePostgreSQLConfig(): void {
+  const errors: string[] = [];
+  
+  // Check required variables
+  const requiredVars = ['DATABASE_USER', 'DATABASE_PASSWORD', 'DATABASE_NAME'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    errors.push(`Missing required PostgreSQL environment variables: ${missingVars.join(', ')}`);
+  }
+  
+  // Validate DATABASE_PORT if provided
+  if (process.env.DATABASE_PORT) {
+    const port = parseInt(process.env.DATABASE_PORT);
+    if (isNaN(port) || port <= 0 || port > 65535) {
+      errors.push(`DATABASE_PORT must be a valid port number (1-65535), got: ${process.env.DATABASE_PORT}`);
+    }
+  }
+  
+  // Validate DATABASE_HOST format if provided
+  if (process.env.DATABASE_HOST && process.env.DATABASE_HOST.trim() === '') {
+    errors.push('DATABASE_HOST cannot be empty');
+  }
+  
+  // Validate database name format
+  if (process.env.DATABASE_NAME) {
+    const dbName = process.env.DATABASE_NAME.trim();
+    if (dbName === '') {
+      errors.push('DATABASE_NAME cannot be empty');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
+      errors.push('DATABASE_NAME can only contain letters, numbers, and underscores');
+    }
+  }
+  
+  // Validate schema name if provided
+  if (process.env.DATABASE_SCHEMA) {
+    const schema = process.env.DATABASE_SCHEMA.trim();
+    if (schema === '') {
+      errors.push('DATABASE_SCHEMA cannot be empty');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(schema)) {
+      errors.push('DATABASE_SCHEMA can only contain letters, numbers, and underscores');
+    }
+  }
+  
+  if (errors.length > 0) {
+    throw new Error(
+      `PostgreSQL configuration validation failed:\n  - ${errors.join('\n  - ')}\n\n` +
+      'Please check your environment variables and ensure all required PostgreSQL settings are properly configured.'
     );
   }
 }
@@ -170,6 +241,29 @@ export function createMySqlConfig(): MySqlConfig {
 }
 
 /**
+ * Creates PostgreSQL database configuration
+ */
+export function createPostgreSqlConfig(): PostgreSqlConfig {
+  validatePostgreSQLConfig();
+  
+  return {
+    type: 'postgres',
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT) || 5432,
+    username: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || '',
+    database: process.env.DATABASE_NAME || 'mydb',
+    schema: process.env.DATABASE_SCHEMA || 'public',
+    entities: [Sprint, TeamMember, TeamMemberSprintCapacity, Team],
+    synchronize: process.env.NODE_ENV !== 'production',
+    logging: ['error', 'warn'],
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    retryAttempts: 3,
+    retryDelay: 1000,
+  };
+}
+
+/**
  * Creates SQLite database configuration
  */
 export function createSqliteConfig(): SqliteConfig {
@@ -189,7 +283,7 @@ export function createSqliteConfig(): SqliteConfig {
 /**
  * Validates database type and returns normalized type
  */
-export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlite' {
+export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlite' | 'postgres' {
   // Handle undefined or empty type
   if (!type || type.trim() === '') {
     return 'mysql'; // Default to mysql for backward compatibility
@@ -197,13 +291,14 @@ export function validateDatabaseType(type: string | undefined): 'mysql' | 'sqlit
   
   const normalizedType = type.toLowerCase().trim();
   
-  if (normalizedType === 'mysql' || normalizedType === 'sqlite') {
-    return normalizedType as 'mysql' | 'sqlite';
+  if (['mysql', 'sqlite', 'postgres', 'postgresql'].includes(normalizedType)) {
+    // Normalize 'postgresql' to 'postgres' for consistency
+    return normalizedType === 'postgresql' ? 'postgres' : normalizedType as 'mysql' | 'sqlite' | 'postgres';
   }
   
   throw new Error(
     `Unsupported database type: "${type}". ` +
-    'Supported types are: "mysql", "sqlite". ' +
+    'Supported types are: "mysql", "sqlite", "postgres", "postgresql". ' +
     'Please set DATABASE_TYPE environment variable to one of the supported values.'
   );
 }
@@ -219,6 +314,8 @@ export function validateDatabaseConfig(type: string): void {
       validateMySqlConfig();
     } else if (validatedType === 'sqlite') {
       validateSqliteConfig();
+    } else if (validatedType === 'postgres') {
+      validatePostgreSQLConfig();
     }
   } catch (error) {
     throw new Error(
@@ -251,20 +348,22 @@ export function createDatabaseConfig(): TypeOrmModuleOptions {
     let config: TypeOrmModuleOptions;
     if (dbType === 'sqlite') {
       config = createSqliteConfig();
+    } else if (dbType === 'postgres') {
+      config = createPostgreSqlConfig();
     } else {
       config = createMySqlConfig();
     }
     
     // Log the selected configuration
-    logger.logDatabaseSelection(dbType, config);
+    logger.logDatabaseSelection(dbType as 'mysql' | 'sqlite', config);
     
     return config;
   } catch (error) {
     // Handle configuration errors with detailed logging
     const dbType = rawDbType ? validateDatabaseType(rawDbType) : 'mysql';
-    const dbError = errorHandler.handleDatabaseError(error, dbType);
+    const dbError = errorHandler.handleDatabaseError(error, dbType as 'mysql' | 'sqlite' | 'postgres');
     
-    logger.logConfigurationError(dbType, dbError.userMessage);
+    logger.logConfigurationError(dbType as 'mysql' | 'sqlite' | 'postgres', dbError.userMessage);
     
     // Provide helpful context in error messages
     const contextInfo = [
@@ -277,6 +376,9 @@ export function createDatabaseConfig(): TypeOrmModuleOptions {
     } else {
       contextInfo.push(`DATABASE_HOST: ${process.env.DATABASE_HOST || 'not set (defaults to localhost)'}`);
       contextInfo.push(`DATABASE_NAME: ${process.env.DATABASE_NAME || 'not set'}`);
+      if (rawDbType === 'postgres' || rawDbType === 'postgresql') {
+        contextInfo.push(`DATABASE_SCHEMA: ${process.env.DATABASE_SCHEMA || 'not set (defaults to public)'}`);
+      }
     }
     
     const enhancedError = new Error(

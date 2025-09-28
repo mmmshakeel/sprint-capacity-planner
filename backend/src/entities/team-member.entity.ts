@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, UpdateDateColumn } from 'typeorm';
 import { TeamMemberSprintCapacity } from './team-member-sprint-capacity.entity';
 import { Team } from './team.entity';
 
@@ -7,19 +7,19 @@ export class TeamMember {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ length: 100 })
   name: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ length: 45 })
   skill: string;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @UpdateDateColumn()
   updatedTime: Date;
 
-  @Column({ type: 'tinyint', default: 1 })
+  @Column({ default: true })
   active: boolean;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ nullable: true })
   teamId: number;
 
   @ManyToOne(() => Team, (team) => team.teamMembers)

@@ -164,14 +164,114 @@ describe('Environment Validation', () => {
       });
     });
 
-    describe('Database type validation', () => {
-      it('should fail validation with invalid database type', () => {
-        process.env.DATABASE_TYPE = 'postgresql';
+    describe('PostgreSQL validation', () => {
+      beforeEach(() => {
+        process.env.DATABASE_TYPE = 'postgres';
+      });
+
+      it('should pass validation with all required PostgreSQL variables', () => {
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'testdb';
+        process.env.DATABASE_HOST = 'localhost';
+        process.env.DATABASE_PORT = '5432';
+        process.env.DATABASE_SCHEMA = 'public';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should fail validation with missing required PostgreSQL variables', () => {
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain('DATABASE_USER is required for PostgreSQL configuration');
+        expect(result.errors).toContain('DATABASE_PASSWORD is required for PostgreSQL configuration');
+        expect(result.errors).toContain('DATABASE_NAME is required for PostgreSQL configuration');
+      });
+
+      it('should fail validation with empty required PostgreSQL variables', () => {
+        process.env.DATABASE_USER = '';
+        process.env.DATABASE_PASSWORD = '  ';
+        process.env.DATABASE_NAME = 'testdb';
 
         const result = validateDatabaseEnvironmentVariables();
 
         expect(result.isValid).toBe(false);
-        expect(result.errors).toContain("DATABASE_TYPE must be 'mysql' or 'sqlite', got: postgresql");
+        expect(result.errors).toContain('DATABASE_USER is required for PostgreSQL configuration');
+        expect(result.errors).toContain('DATABASE_PASSWORD is required for PostgreSQL configuration');
+      });
+
+      it('should fail validation with invalid port number', () => {
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'testdb';
+        process.env.DATABASE_PORT = 'invalid';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain('DATABASE_PORT must be a valid port number (1-65535), got: invalid');
+      });
+
+      it('should fail validation with invalid database name format', () => {
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'test-db!';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain('DATABASE_NAME can only contain letters, numbers, and underscores');
+      });
+
+      it('should fail validation with invalid schema name format', () => {
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'testdb';
+        process.env.DATABASE_SCHEMA = 'test-schema!';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain('DATABASE_SCHEMA can only contain letters, numbers, and underscores');
+      });
+
+      it('should show warnings for missing optional variables', () => {
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'testdb';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(true);
+        expect(result.warnings).toContain('DATABASE_HOST not set, defaulting to localhost');
+        expect(result.warnings).toContain('DATABASE_PORT not set, defaulting to 5432');
+        expect(result.warnings).toContain('DATABASE_SCHEMA not set, defaulting to public');
+      });
+
+      it('should accept postgresql as database type', () => {
+        process.env.DATABASE_TYPE = 'postgresql';
+        process.env.DATABASE_USER = 'testuser';
+        process.env.DATABASE_PASSWORD = 'testpass';
+        process.env.DATABASE_NAME = 'testdb';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(true);
+      });
+    });
+
+    describe('Database type validation', () => {
+      it('should fail validation with invalid database type', () => {
+        process.env.DATABASE_TYPE = 'oracle';
+
+        const result = validateDatabaseEnvironmentVariables();
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain("DATABASE_TYPE must be one of: mysql, sqlite, postgres, postgresql, got: oracle");
       });
 
       it('should default to mysql when DATABASE_TYPE is not set', () => {
@@ -237,6 +337,7 @@ describe('Environment Validation', () => {
       expect(defaults.DATABASE_HOST).toBe('localhost');
       expect(defaults.DATABASE_PORT).toBe('3306');
       expect(defaults.DATABASE_PATH).toBeUndefined();
+      expect(defaults.DATABASE_SCHEMA).toBeUndefined();
     });
 
     it('should return SQLite defaults when DATABASE_TYPE is sqlite', () => {
@@ -248,6 +349,31 @@ describe('Environment Validation', () => {
       expect(defaults.DATABASE_PATH).toBe('./data/database.sqlite');
       expect(defaults.DATABASE_HOST).toBeUndefined();
       expect(defaults.DATABASE_PORT).toBeUndefined();
+      expect(defaults.DATABASE_SCHEMA).toBeUndefined();
+    });
+
+    it('should return PostgreSQL defaults when DATABASE_TYPE is postgres', () => {
+      process.env.DATABASE_TYPE = 'postgres';
+
+      const defaults = getConfigurationDefaults();
+
+      expect(defaults.DATABASE_TYPE).toBe('mysql');
+      expect(defaults.DATABASE_HOST).toBe('localhost');
+      expect(defaults.DATABASE_PORT).toBe('5432');
+      expect(defaults.DATABASE_SCHEMA).toBe('public');
+      expect(defaults.DATABASE_PATH).toBeUndefined();
+    });
+
+    it('should return PostgreSQL defaults when DATABASE_TYPE is postgresql', () => {
+      process.env.DATABASE_TYPE = 'postgresql';
+
+      const defaults = getConfigurationDefaults();
+
+      expect(defaults.DATABASE_TYPE).toBe('mysql');
+      expect(defaults.DATABASE_HOST).toBe('localhost');
+      expect(defaults.DATABASE_PORT).toBe('5432');
+      expect(defaults.DATABASE_SCHEMA).toBe('public');
+      expect(defaults.DATABASE_PATH).toBeUndefined();
     });
 
     it('should return MySQL defaults when DATABASE_TYPE is not set', () => {
@@ -258,6 +384,7 @@ describe('Environment Validation', () => {
       expect(defaults.DATABASE_TYPE).toBe('mysql');
       expect(defaults.DATABASE_HOST).toBe('localhost');
       expect(defaults.DATABASE_PORT).toBe('3306');
+      expect(defaults.DATABASE_SCHEMA).toBeUndefined();
     });
   });
 });

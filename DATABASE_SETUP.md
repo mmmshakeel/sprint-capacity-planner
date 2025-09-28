@@ -52,6 +52,84 @@ backend/
 └── ...
 ```
 
+## PostgreSQL Setup
+
+### Prerequisites
+- Docker and Docker Compose
+- OR local PostgreSQL server
+
+### Option 1: Using Docker (Recommended)
+
+1. **Start PostgreSQL with Docker:**
+   ```bash
+   docker compose up -d postgres
+   ```
+
+2. **Configure environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgres
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_USER=dbuser
+   DATABASE_PASSWORD=dbpassword
+   DATABASE_NAME=mydb
+   DATABASE_SCHEMA=public
+   ```
+
+3. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
+### Option 2: Local PostgreSQL Server
+
+1. **Install PostgreSQL locally** (varies by OS)
+
+2. **Create database and user:**
+   ```sql
+   CREATE DATABASE sprint_planner;
+   CREATE USER app_user WITH PASSWORD 'secure_password';
+   GRANT ALL PRIVILEGES ON DATABASE sprint_planner TO app_user;
+   ```
+
+3. **Configure environment:**
+   ```bash
+   # backend/.env
+   DATABASE_TYPE=postgres
+   DATABASE_HOST=localhost
+   DATABASE_PORT=5432
+   DATABASE_USER=app_user
+   DATABASE_PASSWORD=secure_password
+   DATABASE_NAME=sprint_planner
+   DATABASE_SCHEMA=public
+   ```
+
+4. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
+### Using Docker with Custom Configuration
+
+1. **Copy Docker environment file:**
+   ```bash
+   cp .env.docker backend/.env
+   ```
+
+2. **Start PostgreSQL service:**
+   ```bash
+   docker compose up -d postgres
+   ```
+
+3. **Start the application:**
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
 ## MySQL Setup
 
 ### Prerequisites
@@ -119,6 +197,17 @@ DATABASE_TYPE=sqlite
 DATABASE_PATH=./data/database.sqlite  # Optional, this is default
 ```
 
+### Required for PostgreSQL
+```bash
+DATABASE_TYPE=postgres  # or 'postgresql'
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=your_username
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=your_database
+DATABASE_SCHEMA=public  # Optional, defaults to 'public'
+```
+
 ### Required for MySQL
 ```bash
 DATABASE_TYPE=mysql
@@ -143,6 +232,24 @@ FRONTEND_URL=http://localhost:3000
 # Update backend/.env
 DATABASE_TYPE=sqlite
 DATABASE_PATH=./data/database.sqlite
+
+# Restart application
+npm run start:dev
+```
+
+### Switch to PostgreSQL
+```bash
+# Update backend/.env
+DATABASE_TYPE=postgres
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=dbuser
+DATABASE_PASSWORD=dbpassword
+DATABASE_NAME=mydb
+DATABASE_SCHEMA=public
+
+# Start PostgreSQL (if using Docker)
+docker-compose up -d postgres
 
 # Restart application
 npm run start:dev
@@ -187,7 +294,10 @@ npm run start:dev | grep -i database
 |-------|-----------|
 | `SQLITE_CANTOPEN` | `mkdir -p backend/data` |
 | `ECONNREFUSED` (MySQL) | `docker-compose up -d mysql` |
+| `ECONNREFUSED` (PostgreSQL) | `docker-compose up -d postgres` |
 | `ER_ACCESS_DENIED_ERROR` | Check MySQL credentials in `.env` |
+| `28P01` (PostgreSQL auth failed) | Check PostgreSQL credentials in `.env` |
+| `3D000` (PostgreSQL database not found) | Check `DATABASE_NAME` in `.env` |
 | Port already in use | Change `PORT=3301` in `.env` |
 | Environment not loading | Restart app: `npm run start:dev` |
 | No sample data | Delete SQLite file and restart |
@@ -201,6 +311,15 @@ npm run start:dev | grep -i database
 - [ ] Application starts without errors
 - [ ] Database file created at specified path
 - [ ] API health endpoint responds: `curl http://localhost:3300/api/health`
+
+### PostgreSQL Setup ✓
+- [ ] PostgreSQL server running (Docker or local)
+- [ ] Database created in PostgreSQL
+- [ ] User has proper permissions
+- [ ] `.env` file configured with PostgreSQL settings
+- [ ] Application connects without errors
+- [ ] API health endpoint responds: `curl http://localhost:3300/api/health`
+- [ ] PostgreSQL service healthy: `docker-compose ps postgres`
 
 ### MySQL Setup ✓
 - [ ] MySQL server running (Docker or local)
@@ -216,6 +335,12 @@ npm run start:dev | grep -i database
 - **Best for**: Development, testing, small datasets
 - **Limitations**: Single writer, limited concurrency
 - **File size**: Grows with data, no automatic cleanup
+
+### PostgreSQL
+- **Best for**: Production, complex queries, large datasets, advanced features
+- **Benefits**: Excellent concurrency, ACID compliance, advanced data types, full-text search
+- **Requirements**: Separate server process, more configuration
+- **Features**: JSON support, array types, custom functions, extensions
 
 ### MySQL
 - **Best for**: Production, multiple users, large datasets
