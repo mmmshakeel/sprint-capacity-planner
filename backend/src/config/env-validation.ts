@@ -17,6 +17,7 @@ export interface DatabaseEnvVars {
   DATABASE_PASSWORD?: string;
   DATABASE_NAME?: string;
   DATABASE_PATH?: string;
+  DATABASE_SCHEMA?: string;
 }
 
 /**
@@ -56,14 +57,20 @@ export function validateDatabaseEnvironmentVariables(): ValidationResult {
   const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase().trim();
 
   // Validate DATABASE_TYPE
-  if (process.env.DATABASE_TYPE && !['mysql', 'sqlite'].includes(dbType)) {
-    result.errors.push(`DATABASE_TYPE must be 'mysql' or 'sqlite', got: ${process.env.DATABASE_TYPE}`);
+  const validTypes = ['mysql', 'sqlite', 'postgres', 'postgresql'];
+  if (process.env.DATABASE_TYPE && !validTypes.includes(dbType)) {
+    result.errors.push(`DATABASE_TYPE must be one of: ${validTypes.join(', ')}, got: ${process.env.DATABASE_TYPE}`);
   }
 
-  if (dbType === 'mysql') {
+  // Normalize postgresql to postgres for consistency
+  const normalizedDbType = dbType === 'postgresql' ? 'postgres' : dbType;
+
+  if (normalizedDbType === 'mysql') {
     validateMySQLEnvironmentVariables(result);
-  } else if (dbType === 'sqlite') {
+  } else if (normalizedDbType === 'sqlite') {
     validateSQLiteEnvironmentVariables(result);
+  } else if (normalizedDbType === 'postgres') {
+    validatePostgreSQLEnvironmentVariables(result);
   }
 
   result.isValid = result.errors.length === 0;
@@ -148,6 +155,65 @@ function validateSQLiteEnvironmentVariables(result: ValidationResult): void {
 }
 
 /**
+ * Validates PostgreSQL-specific environment variables
+ */
+function validatePostgreSQLEnvironmentVariables(result: ValidationResult): void {
+  const requiredVars = ['DATABASE_USER', 'DATABASE_PASSWORD', 'DATABASE_NAME'];
+  
+  // Check required variables
+  for (const varName of requiredVars) {
+    if (!process.env[varName] || process.env[varName].trim() === '') {
+      result.errors.push(`${varName} is required for PostgreSQL configuration`);
+    }
+  }
+
+  // Validate optional variables
+  if (process.env.DATABASE_HOST && process.env.DATABASE_HOST.trim() === '') {
+    result.errors.push('DATABASE_HOST cannot be empty if provided');
+  }
+
+  if (process.env.DATABASE_PORT) {
+    const port = parseInt(process.env.DATABASE_PORT);
+    if (isNaN(port) || port <= 0 || port > 65535) {
+      result.errors.push(`DATABASE_PORT must be a valid port number (1-65535), got: ${process.env.DATABASE_PORT}`);
+    }
+  }
+
+  // Validate database name format
+  if (process.env.DATABASE_NAME) {
+    const dbName = process.env.DATABASE_NAME.trim();
+    if (dbName === '') {
+      result.errors.push('DATABASE_NAME cannot be empty');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
+      result.errors.push('DATABASE_NAME can only contain letters, numbers, and underscores');
+    }
+  }
+
+  // Validate schema name if provided
+  if (process.env.DATABASE_SCHEMA) {
+    const schema = process.env.DATABASE_SCHEMA.trim();
+    if (schema === '') {
+      result.errors.push('DATABASE_SCHEMA cannot be empty if provided');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(schema)) {
+      result.errors.push('DATABASE_SCHEMA can only contain letters, numbers, and underscores');
+    }
+  }
+
+  // Warnings for missing optional variables
+  if (!process.env.DATABASE_HOST) {
+    result.warnings.push('DATABASE_HOST not set, defaulting to localhost');
+  }
+  
+  if (!process.env.DATABASE_PORT) {
+    result.warnings.push('DATABASE_PORT not set, defaulting to 5432');
+  }
+
+  if (!process.env.DATABASE_SCHEMA) {
+    result.warnings.push('DATABASE_SCHEMA not set, defaulting to public');
+  }
+}
+
+/**
  * Validates application-specific environment variables
  */
 function validateApplicationEnvironmentVariables(): ValidationResult {
@@ -193,6 +259,8 @@ function validateApplicationEnvironmentVariables(): ValidationResult {
  */
 export function getConfigurationDefaults(): Record<string, string> {
   const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase();
+  // Normalize postgresql to postgres for consistency
+  const normalizedDbType = dbType === 'postgresql' ? 'postgres' : dbType;
   
   const defaults: Record<string, string> = {
     NODE_ENV: 'development',
@@ -200,11 +268,15 @@ export function getConfigurationDefaults(): Record<string, string> {
     DATABASE_TYPE: 'mysql'
   };
 
-  if (dbType === 'mysql') {
+  if (normalizedDbType === 'mysql') {
     defaults.DATABASE_HOST = 'localhost';
     defaults.DATABASE_PORT = '3306';
-  } else if (dbType === 'sqlite') {
+  } else if (normalizedDbType === 'sqlite') {
     defaults.DATABASE_PATH = './data/database.sqlite';
+  } else if (normalizedDbType === 'postgres') {
+    defaults.DATABASE_HOST = 'localhost';
+    defaults.DATABASE_PORT = '5432';
+    defaults.DATABASE_SCHEMA = 'public';
   }
 
   return defaults;

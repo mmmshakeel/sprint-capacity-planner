@@ -107,6 +107,120 @@ describe('DatabaseErrorHandlerService', () => {
     });
   });
 
+  describe('PostgreSQL Error Handling', () => {
+    it('should handle 28P01 (invalid password) correctly', () => {
+      const error = {
+        code: '28P01',
+        message: 'password authentication failed'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('PostgreSQL authentication failed');
+      expect(result.troubleshootingSteps).toContain('Verify DATABASE_USER environment variable is correct');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle 3D000 (database does not exist) correctly', () => {
+      const error = {
+        code: '3D000',
+        message: 'database "testdb" does not exist'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.DATABASE_NOT_FOUND);
+      expect(result.userMessage).toContain('database does not exist on the PostgreSQL server');
+      expect(result.troubleshootingSteps).toContain('Verify DATABASE_NAME environment variable is correct');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle 28000 (invalid authorization) correctly', () => {
+      const error = {
+        code: '28000',
+        message: 'no pg_hba.conf entry for host'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.AUTHENTICATION_FAILED);
+      expect(result.userMessage).toContain('PostgreSQL authorization failed');
+      expect(result.troubleshootingSteps).toContain('Verify DATABASE_USER has proper permissions');
+      expect(result.isRetryable).toBe(false);
+    });
+
+    it('should handle ECONNREFUSED correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ECONNREFUSED',
+        message: 'Connection refused'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('Cannot connect to the PostgreSQL server');
+      expect(result.troubleshootingSteps).toContain('Verify PostgreSQL server is running');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle ENOTFOUND correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ENOTFOUND',
+        message: 'getaddrinfo ENOTFOUND'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.NETWORK_ERROR);
+      expect(result.userMessage).toContain('Cannot resolve the PostgreSQL server hostname');
+      expect(result.troubleshootingSteps).toContain('Verify DATABASE_HOST environment variable is correct');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle ETIMEDOUT correctly for PostgreSQL', () => {
+      const error = {
+        code: 'ETIMEDOUT',
+        message: 'Connection timeout'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.NETWORK_ERROR);
+      expect(result.userMessage).toContain('Connection to PostgreSQL server timed out');
+      expect(result.troubleshootingSteps).toContain('Check network connectivity to PostgreSQL server');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle 53300 (too many connections) correctly', () => {
+      const error = {
+        code: '53300',
+        message: 'too many connections for role'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.CONNECTION_FAILED);
+      expect(result.userMessage).toContain('PostgreSQL server has too many connections');
+      expect(result.troubleshootingSteps).toContain('Wait for existing connections to close');
+      expect(result.isRetryable).toBe(true);
+    });
+
+    it('should handle unknown PostgreSQL errors', () => {
+      const error = {
+        code: 'XX000',
+        message: 'Unknown PostgreSQL error'
+      };
+
+      const result = service.handleDatabaseError(error, 'postgres');
+
+      expect(result.type).toBe(DatabaseErrorType.UNKNOWN_ERROR);
+      expect(result.userMessage).toContain('unexpected PostgreSQL database error');
+      expect(result.troubleshootingSteps).toContain('Check PostgreSQL server logs for more details');
+      expect(result.isRetryable).toBe(false);
+    });
+  });
+
   describe('SQLite Error Handling', () => {
     it('should handle SQLITE_CANTOPEN correctly', () => {
       const error = {

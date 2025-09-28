@@ -36,11 +36,13 @@ export class DatabaseErrorHandlerService {
   /**
    * Processes and categorizes database errors
    */
-  handleDatabaseError(error: any, databaseType: 'mysql' | 'sqlite'): DatabaseError {
+  handleDatabaseError(error: any, databaseType: 'mysql' | 'sqlite' | 'postgres'): DatabaseError {
     if (databaseType === 'mysql') {
       return this.handleMySQLError(error);
     } else if (databaseType === 'sqlite') {
       return this.handleSQLiteError(error);
+    } else if (databaseType === 'postgres') {
+      return this.handlePostgreSQLError(error);
     }
     
     return this.createUnknownError(error);
@@ -296,6 +298,141 @@ export class DatabaseErrorHandlerService {
             'Verify DATABASE_PATH environment variable',
             'Ensure proper file system permissions',
             'Check application logs for more details'
+          ],
+          isRetryable: false
+        };
+    }
+  }
+
+  /**
+   * Handles PostgreSQL-specific errors
+   */
+  private handlePostgreSQLError(error: any): DatabaseError {
+    if (!error) {
+      return this.createUnknownError(new Error('Null or undefined PostgreSQL error'));
+    }
+    
+    const errorCode = error.code;
+    const errorMessage = error.message || 'Unknown PostgreSQL error';
+
+    switch (errorCode) {
+      case '28P01': // Invalid password
+        return {
+          type: DatabaseErrorType.AUTHENTICATION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL authentication failed. Please check your username and password.',
+          technicalMessage: `PostgreSQL authentication error: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_USER environment variable is correct',
+            'Verify DATABASE_PASSWORD environment variable is correct',
+            'Check PostgreSQL pg_hba.conf authentication settings',
+            'Ensure the PostgreSQL user exists and has proper permissions'
+          ],
+          isRetryable: false
+        };
+
+      case '3D000': // Database does not exist
+        return {
+          type: DatabaseErrorType.DATABASE_NOT_FOUND,
+          originalError: error,
+          userMessage: 'The specified database does not exist on the PostgreSQL server.',
+          technicalMessage: `PostgreSQL database not found: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_NAME environment variable is correct',
+            'Create the database on the PostgreSQL server',
+            'Check if you have permission to access the database',
+            'Verify the database name spelling and case sensitivity'
+          ],
+          isRetryable: false
+        };
+
+      case '28000': // Invalid authorization
+        return {
+          type: DatabaseErrorType.AUTHENTICATION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL authorization failed. The user may not have proper permissions.',
+          technicalMessage: `PostgreSQL authorization error: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_USER has proper permissions',
+            'Check PostgreSQL user roles and privileges',
+            'Ensure the user can connect to the specified database',
+            'Review PostgreSQL pg_hba.conf configuration'
+          ],
+          isRetryable: false
+        };
+
+      case 'ECONNREFUSED':
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'Cannot connect to the PostgreSQL server. The server may be down or unreachable.',
+          technicalMessage: `PostgreSQL connection refused: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify PostgreSQL server is running',
+            'Check DATABASE_HOST and DATABASE_PORT environment variables',
+            'Verify network connectivity to the PostgreSQL server',
+            'Check firewall settings and port accessibility (default: 5432)',
+            'Ensure PostgreSQL is listening on the specified port'
+          ],
+          isRetryable: true
+        };
+
+      case 'ENOTFOUND':
+        return {
+          type: DatabaseErrorType.NETWORK_ERROR,
+          originalError: error,
+          userMessage: 'Cannot resolve the PostgreSQL server hostname.',
+          technicalMessage: `PostgreSQL hostname resolution failed: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Verify DATABASE_HOST environment variable is correct',
+            'Check DNS resolution for the hostname',
+            'Try using an IP address instead of hostname',
+            'Verify network connectivity'
+          ],
+          isRetryable: true
+        };
+
+      case 'ETIMEDOUT':
+        return {
+          type: DatabaseErrorType.NETWORK_ERROR,
+          originalError: error,
+          userMessage: 'Connection to PostgreSQL server timed out.',
+          technicalMessage: `PostgreSQL connection timeout: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check network connectivity to PostgreSQL server',
+            'Verify firewall settings allow PostgreSQL connections',
+            'Increase connection timeout if needed',
+            'Check if PostgreSQL server is overloaded'
+          ],
+          isRetryable: true
+        };
+
+      case '53300': // Too many connections
+        return {
+          type: DatabaseErrorType.CONNECTION_FAILED,
+          originalError: error,
+          userMessage: 'PostgreSQL server has too many connections.',
+          technicalMessage: `PostgreSQL connection limit exceeded: ${errorMessage}`,
+          troubleshootingSteps: [
+            'Wait for existing connections to close',
+            'Increase PostgreSQL max_connections setting',
+            'Optimize application connection pooling',
+            'Check for connection leaks in the application'
+          ],
+          isRetryable: true
+        };
+
+      default:
+        return {
+          type: DatabaseErrorType.UNKNOWN_ERROR,
+          originalError: error,
+          userMessage: 'An unexpected PostgreSQL database error occurred.',
+          technicalMessage: `PostgreSQL error (${errorCode}): ${errorMessage}`,
+          troubleshootingSteps: [
+            'Check PostgreSQL server logs for more details',
+            'Verify all PostgreSQL environment variables',
+            'Ensure PostgreSQL server is properly configured',
+            'Contact your database administrator if the problem persists'
           ],
           isRetryable: false
         };
