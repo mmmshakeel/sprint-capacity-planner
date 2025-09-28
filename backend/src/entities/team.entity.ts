@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { TeamMember } from './team-member.entity';
 import { Sprint } from './sprint.entity';
+import { booleanTransformer } from '../utils/boolean.transformer';
 
 @Entity()
 export class Team {
@@ -16,7 +17,11 @@ export class Team {
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ default: true })
+  @Column({ 
+    type: 'boolean', 
+    default: true,
+    transformer: booleanTransformer
+  })
   active: boolean;
 
   @OneToMany(() => TeamMember, (teamMember) => teamMember.team)

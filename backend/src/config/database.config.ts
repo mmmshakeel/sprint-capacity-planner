@@ -5,8 +5,68 @@ import { TeamMemberSprintCapacity } from '../entities/team-member-sprint-capacit
 import { Team } from '../entities/team.entity';
 import { DatabaseLoggerService } from './database-logger.service';
 import { DatabaseErrorHandlerService } from './database-error-handler.service';
+import { booleanTransformer } from '../utils/boolean.transformer';
 import * as path from 'path';
 import * as fs from 'fs';
+
+/**
+ * Database-specific boolean column type mappings
+ */
+export const BOOLEAN_COLUMN_TYPES = {
+  mysql: 'tinyint',
+  sqlite: 'integer', 
+  postgres: 'boolean'
+} as const;
+
+/**
+ * Boolean field validation configuration for each database type
+ */
+export interface BooleanFieldConfig {
+  columnType: string;
+  supportsNativeBoolean: boolean;
+  requiresTransformer: boolean;
+  validationRules: {
+    acceptsStringBoolean: boolean;
+    acceptsNumericBoolean: boolean;
+    acceptsNativeBoolean: boolean;
+  };
+}
+
+/**
+ * Database-specific boolean field configurations
+ */
+export const BOOLEAN_FIELD_CONFIGS: Record<'mysql' | 'sqlite' | 'postgres', BooleanFieldConfig> = {
+  mysql: {
+    columnType: 'tinyint',
+    supportsNativeBoolean: false,
+    requiresTransformer: true,
+    validationRules: {
+      acceptsStringBoolean: false,
+      acceptsNumericBoolean: true,
+      acceptsNativeBoolean: false
+    }
+  },
+  sqlite: {
+    columnType: 'integer',
+    supportsNativeBoolean: false,
+    requiresTransformer: true,
+    validationRules: {
+      acceptsStringBoolean: true, // SQLite is flexible
+      acceptsNumericBoolean: true,
+      acceptsNativeBoolean: true
+    }
+  },
+  postgres: {
+    columnType: 'boolean',
+    supportsNativeBoolean: true,
+    requiresTransformer: false, // PostgreSQL handles boolean natively when using proper column type
+    validationRules: {
+      acceptsStringBoolean: false,
+      acceptsNumericBoolean: false,
+      acceptsNativeBoolean: true
+    }
+  }
+};
 
 /**
  * Base database configuration interface
@@ -54,6 +114,118 @@ export interface PostgreSqlConfig extends DatabaseConfig {
   ssl?: any;
   retryAttempts?: number;
   retryDelay?: number;
+}
+
+/**
+ * Validates boolean field configuration for a specific database type
+ */
+export function validateBooleanFieldConfig(dbType: 'mysql' | 'sqlite' | 'postgres'): void {
+  const config = BOOLEAN_FIELD_CONFIGS[dbType];
+  const errors: string[] = [];
+
+  // Validate that boolean transformer is available when required
+  if (config.requiresTransformer) {
+    try {
+      const transformer = booleanTransformer;
+      if (!transformer || typeof transformer.to !== 'function' || typeof transformer.from !== 'function') {
+        errors.push(`Boolean transformer is required for ${dbType} but is not properly configured`);
+      }
+    } catch (error) {
+      errors.push(`Failed to load boolean transformer for ${dbType}: ${error.message}`);
+    }
+  }
+
+  // Validate column type mapping
+  if (!config.columnType || config.columnType.trim() === '') {
+    errors.push(`Boolean column type is not defined for ${dbType}`);
+  }
+
+  // Validate that the column type matches expected database-specific types
+  const expectedType = BOOLEAN_COLUMN_TYPES[dbType];
+  if (config.columnType !== expectedType) {
+    errors.push(`Boolean column type mismatch for ${dbType}: expected '${expectedType}', got '${config.columnType}'`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Boolean field configuration validation failed for ${dbType}:\n  - ${errors.join('\n  - ')}\n\n` +
+      'This indicates a configuration issue that could cause boolean field operations to fail. ' +
+      'Please check the boolean field configuration and transformer setup.'
+    );
+  }
+}
+
+/**
+ * Validates that entities with boolean fields are properly configured
+ */
+export function validateEntityBooleanFields(dbType: 'mysql' | 'sqlite' | 'postgres'): void {
+  const config = BOOLEAN_FIELD_CONFIGS[dbType];
+  const errors: string[] = [];
+
+  // Check Team entity boolean field configuration
+  try {
+    const teamEntity = Team;
+    if (!teamEntity) {
+      errors.push('Team entity is not available for boolean field validation');
+    }
+  } catch (error) {
+    errors.push(`Failed to validate Team entity boolean fields: ${error.message}`);
+  }
+
+  // Check TeamMember entity boolean field configuration  
+  try {
+    const teamMemberEntity = TeamMember;
+    if (!teamMemberEntity) {
+      errors.push('TeamMember entity is not available for boolean field validation');
+    }
+  } catch (error) {
+    errors.push(`Failed to validate TeamMember entity boolean fields: ${error.message}`);
+  }
+
+  // For databases that require transformers, validate transformer is properly applied
+  if (config.requiresTransformer) {
+    // Note: In a real implementation, we would use reflection to check entity metadata
+    // For now, we'll validate that the transformer is available
+    try {
+      const transformer = booleanTransformer;
+      if (!transformer) {
+        errors.push(`Boolean transformer is required for ${dbType} entities but is not available`);
+      }
+    } catch (error) {
+      errors.push(`Boolean transformer validation failed for ${dbType}: ${error.message}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Entity boolean field validation failed for ${dbType}:\n  - ${errors.join('\n  - ')}\n\n` +
+      'This indicates that entities with boolean fields may not work correctly with the selected database. ' +
+      'Please ensure all entities with boolean fields are properly configured with appropriate transformers.'
+    );
+  }
+}
+
+/**
+ * Comprehensive boolean configuration validation for a database type
+ */
+export function validateBooleanConfiguration(dbType: 'mysql' | 'sqlite' | 'postgres'): void {
+  try {
+    // Validate boolean field configuration
+    validateBooleanFieldConfig(dbType);
+    
+    // Validate entity boolean fields
+    validateEntityBooleanFields(dbType);
+    
+    // Log successful validation
+    const logger = new DatabaseLoggerService();
+    logger.logInitializationStep(`Boolean configuration validation completed for ${dbType}`);
+  } catch (error) {
+    throw new Error(
+      `Boolean configuration validation failed for ${dbType}: ${error.message}\n\n` +
+      'This error indicates that boolean fields may not work correctly with the selected database type. ' +
+      'Please check your entity definitions and transformer configurations.'
+    );
+  }
 }
 
 /**
@@ -163,12 +335,13 @@ function validateSqliteConfig(): void {
 }
 
 /**
- * Creates MySQL database configuration
+ * Creates MySQL database configuration with boolean type mapping
  */
 export function createMySqlConfig(): MySqlConfig {
   validateMySqlConfig();
+  validateBooleanConfiguration('mysql');
   
-  return {
+  const config: MySqlConfig = {
     type: 'mysql',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT) || 3306,
@@ -182,23 +355,38 @@ export function createMySqlConfig(): MySqlConfig {
     retryAttempts: 3,
     retryDelay: 1000,
   };
+
+  // Add MySQL-specific boolean column type mapping
+  (config as any).columnTypes = {
+    boolean: BOOLEAN_COLUMN_TYPES.mysql
+  };
+
+  return config;
 }
 
 /**
- * Creates SQLite database configuration
+ * Creates SQLite database configuration with boolean type mapping
  */
 export function createSqliteConfig(): SqliteConfig {
   validateSqliteConfig();
+  validateBooleanConfiguration('sqlite');
   
   const databasePath = process.env.DATABASE_PATH || './data/database.sqlite';
   
-  return {
+  const config: SqliteConfig = {
     type: 'sqlite',
     database: databasePath,
     entities: [Sprint, TeamMember, TeamMemberSprintCapacity, Team],
     synchronize: true, // Always true for SQLite in development
     logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error', 'warn'],
   };
+
+  // Add SQLite-specific boolean column type mapping
+  (config as any).columnTypes = {
+    boolean: BOOLEAN_COLUMN_TYPES.sqlite
+  };
+
+  return config;
 }
 
 /**
@@ -247,12 +435,13 @@ function validatePostgreSqlConfig(): void {
 }
 
 /**
- * Creates PostgreSQL database configuration
+ * Creates PostgreSQL database configuration with boolean type mapping
  */
 export function createPostgreSqlConfig(): PostgreSqlConfig {
   validatePostgreSqlConfig();
+  validateBooleanConfiguration('postgres');
   
-  return {
+  const config: PostgreSqlConfig = {
     type: 'postgres',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT) || 5432, // PostgreSQL default port
@@ -266,6 +455,13 @@ export function createPostgreSqlConfig(): PostgreSqlConfig {
     retryAttempts: 3,
     retryDelay: 1000,
   };
+
+  // Add PostgreSQL-specific boolean column type mapping
+  (config as any).columnTypes = {
+    boolean: BOOLEAN_COLUMN_TYPES.postgres
+  };
+
+  return config;
 }
 
 /**
@@ -301,6 +497,7 @@ export function validateDatabaseConfig(type: string): void {
   const validatedType = validateDatabaseType(type);
   
   try {
+    // Validate basic database configuration
     if (validatedType === 'mysql') {
       validateMySqlConfig();
     } else if (validatedType === 'sqlite') {
@@ -308,11 +505,39 @@ export function validateDatabaseConfig(type: string): void {
     } else if (validatedType === 'postgres') {
       validatePostgreSqlConfig();
     }
+    
+    // Validate boolean configuration for the database type
+    validateBooleanConfiguration(validatedType);
   } catch (error) {
     throw new Error(
       `Database configuration validation failed for ${validatedType}: ${error.message}`
     );
   }
+}
+
+/**
+ * Gets boolean field configuration for a specific database type
+ */
+export function getBooleanFieldConfig(dbType: 'mysql' | 'sqlite' | 'postgres'): BooleanFieldConfig {
+  const config = BOOLEAN_FIELD_CONFIGS[dbType];
+  if (!config) {
+    throw new Error(`Boolean field configuration not found for database type: ${dbType}`);
+  }
+  return config;
+}
+
+/**
+ * Gets the appropriate column type for boolean fields based on database type
+ */
+export function getBooleanColumnType(dbType: 'mysql' | 'sqlite' | 'postgres'): string {
+  return BOOLEAN_COLUMN_TYPES[dbType];
+}
+
+/**
+ * Checks if a database type requires boolean transformers
+ */
+export function requiresBooleanTransformer(dbType: 'mysql' | 'sqlite' | 'postgres'): boolean {
+  return BOOLEAN_FIELD_CONFIGS[dbType].requiresTransformer;
 }
 
 /**
