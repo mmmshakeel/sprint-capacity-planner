@@ -456,10 +456,8 @@ export function createPostgreSqlConfig(): PostgreSqlConfig {
     retryDelay: 1000,
   };
 
-  // Add PostgreSQL-specific boolean column type mapping
-  (config as any).columnTypes = {
-    boolean: BOOLEAN_COLUMN_TYPES.postgres
-  };
+  // PostgreSQL uses native boolean type, no custom column type mapping needed
+  // The native boolean type works correctly with defaults
 
   return config;
 }

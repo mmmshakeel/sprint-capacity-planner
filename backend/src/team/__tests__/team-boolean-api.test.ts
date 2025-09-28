@@ -31,9 +31,19 @@ describe('Team Boolean API Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up test data
-    await dataSource.getRepository(TeamMember).delete({});
-    await teamRepository.delete({});
+    // Clean up test data - disable foreign key checks temporarily for SQLite
+    if (dataSource.options.type === 'sqlite') {
+      await dataSource.query('PRAGMA foreign_keys = OFF');
+    }
+    
+    try {
+      await dataSource.getRepository(TeamMember).clear();
+      await teamRepository.clear();
+    } finally {
+      if (dataSource.options.type === 'sqlite') {
+        await dataSource.query('PRAGMA foreign_keys = ON');
+      }
+    }
   });
 
   describe('POST /teams - Create Team with Boolean Fields', () => {

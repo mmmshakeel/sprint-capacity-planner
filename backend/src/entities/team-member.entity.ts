@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { TeamMemberSprintCapacity } from './team-member-sprint-capacity.entity';
 import { Team } from './team.entity';
-import { booleanTransformer } from '../utils/boolean.transformer';
+import { getConditionalBooleanTransformer } from '../utils/conditional-boolean-transformer';
 
 @Entity()
 export class TeamMember {
@@ -20,7 +20,7 @@ export class TeamMember {
   @Column({ 
     type: 'boolean', 
     default: true,
-    transformer: booleanTransformer
+    nullable: false
   })
   active: boolean;
 
