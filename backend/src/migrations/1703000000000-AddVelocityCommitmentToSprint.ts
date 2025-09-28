@@ -8,7 +8,7 @@ export class AddVelocityCommitmentToSprint1703000000000 implements MigrationInte
       'sprint',
       new TableColumn({
         name: 'velocityCommitment',
-        type: 'int',
+        type: 'integer',
         isNullable: true,
       }),
     );

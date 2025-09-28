@@ -20,7 +20,7 @@ import { DatabaseErrorHandlerService } from './config/database-error-handler.ser
       useFactory: async () => {
         const logger = new DatabaseLoggerService();
         const errorHandler = new DatabaseErrorHandlerService();
-        const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite';
+        const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite' | 'postgresql';
 
         try {
           logger.logConnectionAttempt(dbType);
@@ -48,7 +48,7 @@ import { DatabaseErrorHandlerService } from './config/database-error-handler.ser
       dataSourceFactory: async (options) => {
         const { DataSource } = await import('typeorm');
         const logger = new DatabaseLoggerService();
-        const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite';
+        const dbType = (process.env.DATABASE_TYPE || 'mysql').toLowerCase() as 'mysql' | 'sqlite' | 'postgresql';
 
         const dataSource = new DataSource(options);
 

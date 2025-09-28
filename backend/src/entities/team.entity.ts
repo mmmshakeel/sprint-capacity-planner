@@ -7,16 +7,16 @@ export class Team {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ length: 100 })
   name: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ type: 'tinyint', default: 1 })
+  @Column({ default: true })
   active: boolean;
 
   @OneToMany(() => TeamMember, (teamMember) => teamMember.team)

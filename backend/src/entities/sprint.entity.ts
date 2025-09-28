@@ -7,7 +7,7 @@ export class Sprint {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ length: 100 })
   name: string;
 
   @Column({ type: 'date' })
@@ -16,19 +16,19 @@ export class Sprint {
   @Column({ type: 'date' })
   endDate: Date;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ default: 0 })
   capacity: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ default: 0 })
   projectedVelocity: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ default: 0 })
   completedVelocity: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ nullable: true })
   velocityCommitment?: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ nullable: true })
   teamId: number;
 
   @ManyToOne(() => Team, (team) => team.sprints)

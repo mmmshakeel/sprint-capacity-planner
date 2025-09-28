@@ -7,13 +7,13 @@ export class TeamMemberSprintCapacity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'int' })
+  @Column()
   teamMemberId: number;
 
-  @Column({ type: 'int' })
+  @Column()
   sprintId: number;
 
-  @Column({ type: 'int' })
+  @Column()
   capacity: number;
 
   @ManyToOne(() => TeamMember, (teamMember) => teamMember.sprintCapacities)

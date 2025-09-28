@@ -7,19 +7,19 @@ export class TeamMember {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ length: 100 })
   name: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ length: 45 })
   skill: string;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: () => 'CURRENT_TIMESTAMP' })
   updatedTime: Date;
 
-  @Column({ type: 'tinyint', default: 1 })
+  @Column({ default: true })
   active: boolean;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ nullable: true })
   teamId: number;
 
   @ManyToOne(() => Team, (team) => team.teamMembers)
