@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "backend/api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(health|sprints|team-members|routes|api-docs|swagger-json)/(.*)",
+      "destination": "/backend/api/index"
+    },
+    {
+      "source": "/(health|sprints|team-members|routes|api-docs|swagger-json)",
+      "destination": "/backend/api/index"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/index.html"
+    }
+  ],
+  "functions": {
+    "backend/api/index.ts": {
+      "maxDuration": 30
+    }
+  }
+}
